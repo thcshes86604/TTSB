@@ -3,44 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 允許網頁以全螢幕 App 模式執行 (隱藏網址列與底部導覽列) -->
+    <!-- PWA 最佳化標籤 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- 設定頂部狀態列 (時間、電量那條) 的樣式為黑色半透明 -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <!-- 自訂加入主畫面時顯示的 App 名稱 -->
-    <meta name="apple-mobile-web-app-title" content="TTSB 雷達">    
+    <meta name="apple-mobile-web-app-title" content="TTSB 雷達">
     <title>TTSB 事故調查錄影調閱系統 - 電影拍攝用</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background-color: #080c10; overflow: hidden; font-family: "Courier New", Courier, monospace; color: #b5c6d3; touch-action: none; }
 
-        #top-bar {
-            position: absolute; top: 0; left: 0; width: 100%; height: 35px;
-            background-color: #1a1010; border-bottom: 2px solid #a94442;
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 20px; font-size: 15px; font-weight: bold; z-index: 5;
-        }
-
+        #top-bar { position: absolute; top: 0; left: 0; width: 100%; height: 35px; background-color: #1a1010; border-bottom: 2px solid #a94442; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 15px; font-weight: bold; z-index: 5; }
         .replay-alert { color: #ff4444; animation: blink 2s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .utc-time { color: #ff7777; background: rgba(255, 0, 0, 0.1); padding: 2px 8px; border-radius: 3px; }
-
         canvas { display: block; margin-top: 35px; cursor: crosshair; }
 
-        #cursor-coords {
-            position: absolute; top: 45px; left: 15px;
-            background: rgba(8, 12, 16, 0.85); border: 1px solid #324354;
-            padding: 8px 12px; font-size: 13px; color: #6495ed;
-            z-index: 10; pointer-events: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); line-height: 1.4;
-        }
-
-        #control-panel {
-            position: absolute; top: 45px; right: 15px; width: 330px;
-            background-color: rgba(18, 26, 36, 0.95); border: 1px solid #324354;
-            border-radius: 6px; padding: 12px; font-family: sans-serif;
-            z-index: 20; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-
+        #cursor-coords { position: absolute; top: 45px; left: 15px; background: rgba(8, 12, 16, 0.85); border: 1px solid #324354; padding: 8px 12px; font-size: 13px; color: #6495ed; z-index: 10; pointer-events: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); line-height: 1.4; }
+        #control-panel { position: absolute; top: 45px; right: 15px; width: 330px; background-color: rgba(18, 26, 36, 0.95); border: 1px solid #324354; border-radius: 6px; padding: 12px; font-family: sans-serif; z-index: 20; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .panel-header { font-size: 13px; font-weight: bold; color: #6495ed; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #324354; padding-bottom: 6px; }
         .close-btn { color: #a94442; cursor: pointer; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 3px; background: rgba(169, 68, 66, 0.15); }
         .close-btn:hover { background: rgba(169, 68, 66, 0.35); }
@@ -65,12 +44,7 @@
         .btn-delete { background: #a94442; color: white; border: none; padding: 4px 8px; cursor: pointer; border-radius: 2px; font-size: 10px; }
         .global-hint { font-size: 11px; color: #678; margin-top: 8px; text-align: center; border-top: 1px dashed #253342; padding-top: 6px; }
 
-        #playback-bar {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 55px;
-            background-color: #121a24; border-top: 2px solid #324354;
-            display: flex; align-items: center; padding: 0 20px; z-index: 100;
-        }
-
+        #playback-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 55px; background-color: #121a24; border-top: 2px solid #324354; display: flex; align-items: center; padding: 0 20px; z-index: 100; }
         .pb-btn { background: #253342; border: 1px solid #455a64; color: #b5c6d3; padding: 8px 16px; margin-right: 10px; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px; border-radius: 3px; }
         .pb-btn:hover { background: #324354; }
         .pb-btn.active { background: #4CAF50; color: white; border-color: #4CAF50; }
@@ -79,7 +53,6 @@
         #timeline { flex-grow: 1; height: 16px; background: #080c10; border-radius: 8px; margin: 0 20px; position: relative; border: 1px solid #324354; cursor: pointer; }
         #timeline-fill { height: 100%; width: 0%; background: #6495ed; border-radius: 7px; pointer-events: none; }
         #timeline-handle { position: absolute; top: -4px; bottom: -4px; width: 12px; background: #fff; left: 0%; transform: translateX(-50%); border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.8); pointer-events: none; }
-        
         #pb-timecode { font-size: 20px; color: #fff; font-weight: bold; background: #000; padding: 4px 12px; border: 1px solid #455a64; border-radius: 4px; }
 
         @media (max-width: 768px) {
@@ -134,8 +107,8 @@
                 <div class="form-group"><label>目標航點:</label><select id="inputWaypoint"><option value="MUKAM">MUKAM</option><option value="LMWO">LMWO</option><option value="KLDWA" selected>KLDWA</option><option value="PACIF">PACIF</option></select></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>X 座標:</label><input type="number" id="inputX" value="500"></div>
-                <div class="form-group"><label>Y 座標:</label><input type="number" id="inputY" value="300"></div>
+                <div class="form-group"><label>相對X座標:</label><input type="number" id="inputX" value="-250"></div>
+                <div class="form-group"><label>相對Y座標:</label><input type="number" id="inputY" value="-350"></div>
                 <div class="form-group"><label>速度:</label><input type="number" id="inputSpeed" value="0.8" step="0.1"></div>
             </div>
             <div class="form-group"><label>高度與速度標籤:</label><input type="text" id="inputAltSpd" value="350=  45"></div>
@@ -154,7 +127,6 @@
         const canvas = document.getElementById('radarCanvas');
         const ctx = canvas.getContext('2d');
         
-        // --- 設定檔與儲存常數 ---
         const STORAGE_KEY = 'ttsb_radar_config';
         const CONFIG_URL = 'config.json';
         
@@ -165,6 +137,7 @@
         let showSweep = false; 
         let playbackSpeed = 1; 
 
+        // 航點改成相對中心座標
         const waypoints = { "MUKAM": { x: -420, y: -280 }, "LMWO": { x: 490,  y: -150 }, "KLDWA": { x: 280,  y: 300 }, "PACIF": { x: -300, y: 250 } };
 
         let timelineStartTime = Date.now();
@@ -175,8 +148,6 @@
 
         const CENTER_LAT = -24.0; const CENTER_LON = 178.0; const DEG_PER_PX = 0.003; 
 
-        // ================= 設定檔與 Storage 管理 =================
-
         async function initApp() {
             const savedData = localStorage.getItem(STORAGE_KEY);
             if (savedData) {
@@ -186,7 +157,6 @@
                 console.log("📥 載入全新預設 config.json");
                 await loadDefaultConfig();
             }
-            // 啟動繪圖迴圈
             requestAnimationFrame(drawRadar);
         }
 
@@ -202,24 +172,20 @@
         }
 
         function applySettings(data) {
-            // 1. 設定時間
             document.getElementById('inputTime').value = data.startTime;
             
-            // 2. 解析並重置飛機狀態
             initialPlanes = data.planes.map(p => {
-                // 自動運算航向 (heading) 如果 config 沒提供
                 let heading = p.heading;
                 if (heading === undefined && p.status && waypoints[p.status]) {
-                    const dx = (window.innerWidth/2 + waypoints[p.status].x) - p.x;
-                    const dy = (window.innerHeight/2 + waypoints[p.status].y) - p.y;
+                    const dx = waypoints[p.status].x - p.x;
+                    const dy = waypoints[p.status].y - p.y;
                     heading = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
                     if (heading < 0) heading += 360;
                 }
                 return { ...p, heading: heading, history: [], scriptPhase: 0, outOfBounds: false };
             });
 
-            // 3. 套用到系統
-            setCustomTime(false); // false 代表不要在此刻觸發 saveToLocal
+            setCustomTime(false);
             updatePlaneListUI();
         }
 
@@ -231,17 +197,14 @@
                 }))
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-            console.log("💾 設定已存入 LocalStorage");
         }
 
         function resetToConfig() {
             if(confirm("⚠️ 確定要捨棄所有修改，還原成 config.json 的初始設定嗎？")) {
                 localStorage.removeItem(STORAGE_KEY);
-                location.reload(); // 最乾淨的做法：直接重整網頁重新抓取
+                location.reload(); 
             }
         }
-
-        // ================= 核心邏輯 =================
 
         function setCustomTime(triggerSave = true) {
             const timeStr = document.getElementById('inputTime').value;
@@ -274,13 +237,14 @@
                 plane.y += Math.sin(rad) * (plane.speed / 2) * frameRatio;
 
                 if (plane.id === "CAL001") {
-                    if (plane.scriptPhase === 0 && plane.y > canvas.height * 0.3) {
+                    // 使用中心點相對座標觸發，所有裝置一致
+                    if (plane.scriptPhase === 0 && plane.y > -100) {
                         plane.status = "7700"; plane.altSpd = "280↓  38"; plane.speed = 0.5; plane.scriptPhase = 1;
                     }
-                    if (plane.scriptPhase === 1 && plane.y > canvas.height * 0.45) {
+                    if (plane.scriptPhase === 1 && plane.y > 0) {
                         plane.altSpd = "120↓↓ 28"; plane.speed = 0.2; plane.scriptPhase = 2;
                     }
-                    if (plane.scriptPhase === 2 && plane.y > canvas.height * 0.55) {
+                    if (plane.scriptPhase === 2 && plane.y > 80) {
                         plane.status = "CST"; plane.altSpd = "---   --"; plane.speed = 0.1; plane.scriptPhase = 3; plane.cstAccumulator = 0; 
                         const d = new Date(simulatedTimestamp);
                         const tStr = `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}:${String(d.getUTCSeconds()).padStart(2,'0')} UTC`;
@@ -292,7 +256,8 @@
                     }
                 }
 
-                if (plane.x > canvas.width+300 || plane.x < -300 || plane.y > canvas.height+300 || plane.y < -300) plane.outOfBounds = true;
+                // 邊界判定改為相對邏輯 (容錯範圍加大，避免提早消失)
+                if (plane.x > 2500 || plane.x < -2500 || plane.y > 2500 || plane.y < -2500) plane.outOfBounds = true;
 
                 plane.histTimer = (plane.histTimer || 0) + dtMs;
                 if (plane.histTimer >= 1000) { 
@@ -319,8 +284,6 @@
             lastSimulatedTimestamp = targetTimestamp;
             renderClockUI();
         }
-
-        // ================= 觸控與時間軸共用邏輯 =================
         
         let isDraggingTimeline = false;
         const timeline = document.getElementById('timeline');
@@ -366,8 +329,6 @@
         function handleTimelineEnd() { if (isDraggingTimeline) isDraggingTimeline = false; }
         document.addEventListener('mouseup', handleTimelineEnd);
         document.addEventListener('touchend', handleTimelineEnd);
-
-        // ================= 播放時鐘與畫面縮放 =================
 
         function updateClock() {
             const now = Date.now();
@@ -431,14 +392,13 @@
             const panel = document.getElementById('control-panel');
             if (panel.style.display !== 'none') {
                 const rect = canvas.getBoundingClientRect();
-                document.getElementById('inputX').value = Math.round(getClientX(e) - rect.left);
-                document.getElementById('inputY').value = Math.round(getClientY(e) - rect.top);
+                // 點擊轉換為中心相對座標
+                document.getElementById('inputX').value = Math.round(getClientX(e) - rect.left - (canvas.width / 2));
+                document.getElementById('inputY').value = Math.round(getClientY(e) - rect.top - (canvas.height / 2));
             }
         }
         canvas.addEventListener('mousedown', handleCanvasTap);
         canvas.addEventListener('touchstart', handleCanvasTap, {passive: true});
-
-        // ================= UI 互動與存檔觸發 =================
 
         function addPlane() {
             const id = document.getElementById('inputId').value;
@@ -448,14 +408,15 @@
             const x = parseFloat(document.getElementById('inputX').value);
             const y = parseFloat(document.getElementById('inputY').value);
 
-            const dx = (canvas.width/2 + waypoints[wpName].x) - x;
-            const dy = (canvas.height/2 + waypoints[wpName].y) - y;
+            // 由於全部改成相對座標，這裡的計算直接減即可，不需再牽扯 canvas 寬高
+            const dx = waypoints[wpName].x - x;
+            const dy = waypoints[wpName].y - y;
             let heading = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
             if (heading < 0) heading += 360;
 
             initialPlanes.push({ id, x, y, heading, speed, altSpd, status: wpName, history: [], scriptPhase: 0 });
             
-            saveToLocal(); // 儲存設定
+            saveToLocal();
             simulateTo(simulatedTimestamp);
             updatePlaneListUI();
         }
@@ -480,7 +441,7 @@
         
         function deletePlane(index) {
             initialPlanes.splice(index, 1);
-            saveToLocal(); // 儲存設定
+            saveToLocal();
             simulateTo(simulatedTimestamp);
             updatePlaneListUI();
         }
@@ -505,16 +466,19 @@
             }
         });
 
-        // ================= 繪圖引擎 =================
-
         function drawMap() {
             const cx = canvas.width / 2; const cy = canvas.height / 2;
             ctx.save(); ctx.font = 'bold 60px Arial'; ctx.fillStyle = 'rgba(255, 255, 255, 0.04)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.translate(cx, cy); ctx.rotate(-20 * Math.PI / 180); ctx.fillText('TTSB CONFIDENTIAL REPLAY', 0, -50); ctx.font = 'bold 30px Arial'; ctx.fillText('DO NOT DISTRIBUTE', 0, 20); ctx.restore();
+            
             ctx.strokeStyle = 'rgba(84, 132, 152, 0.3)'; ctx.lineWidth = 1; ctx.setLineDash([5, 10]); 
             for(let i = -2000; i < 3000; i += 150) { ctx.beginPath(); ctx.moveTo(i, -500); ctx.lineTo(i, canvas.height + 500); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-500, i); ctx.lineTo(canvas.width + 500, i); ctx.stroke(); } ctx.setLineDash([]); 
 
             ctx.save(); ctx.strokeStyle = 'rgba(100, 140, 200, 0.6)'; ctx.lineWidth = 2; ctx.setLineDash([20, 10, 5, 10]); ctx.beginPath(); ctx.moveTo(-200, cy - 100); ctx.lineTo(canvas.width + 200, cy + 300); ctx.stroke();
-            ctx.fillStyle = 'rgba(100, 140, 200, 0.7)'; ctx.font = 'bold 16px "Courier New"'; ctx.translate(cx - 200, cy - 20); const angle = Math.atan2((cy+300)-(cy-100), (canvas.width+200)-(-200)); ctx.rotate(angle); ctx.fillText("NFFF (NADI OCEANIC FIR)", 0, -10); ctx.fillText("NZZO (AUCKLAND OCEANIC FIR)", 0, 25); ctx.restore();
+            
+            // FIR 區塊文字，修正干擾：往左偏移 400，往上微調
+            ctx.fillStyle = 'rgba(100, 140, 200, 0.7)'; ctx.font = 'bold 16px "Courier New"'; ctx.translate(cx - 400, cy - 60); 
+            const angle = Math.atan2((cy+300)-(cy-100), (canvas.width+200)-(-200)); ctx.rotate(angle); 
+            ctx.fillText("NFFF (NADI OCEANIC FIR)", 0, -10); ctx.fillText("NZZO (AUCKLAND OCEANIC FIR)", 0, 25); ctx.restore();
 
             ctx.fillStyle = 'rgba(104, 142, 162, 0.9)'; ctx.strokeStyle = 'rgba(104, 142, 162, 0.9)'; ctx.font = '12px "Courier New"';
             Object.entries(waypoints).forEach(([name, wp]) => { const px = cx + wp.x; const py = cy + wp.y; ctx.beginPath(); ctx.moveTo(px, py - 6); ctx.lineTo(px + 6, py + 5); ctx.lineTo(px - 6, py + 5); ctx.closePath(); ctx.stroke(); ctx.fillText(name, px + 10, py + 5); });
@@ -532,24 +496,30 @@
 
             ctx.fillStyle = '#080c10'; ctx.fillRect(0, 0, canvas.width, canvas.height); drawMap();
 
+            const cx = canvas.width / 2; const cy = canvas.height / 2;
+
             if (showSweep) {
                 const currentSweepAngle = ((simulatedTimestamp - timelineStartTime) / 1000) * 1.5;
-                ctx.save(); ctx.translate(canvas.width / 2, canvas.height / 2); ctx.rotate(currentSweepAngle);
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(currentSweepAngle);
                 const radius = Math.max(canvas.width, canvas.height); const grad = ctx.createConicGradient(0, 0, 0);
                 grad.addColorStop(0, 'rgba(50, 168, 113, 0.4)'); grad.addColorStop(0.001, 'rgba(50, 168, 113, 0)'); grad.addColorStop(0.85, 'rgba(50, 168, 113, 0)'); grad.addColorStop(1, 'rgba(50, 168, 113, 0.4)');     
                 ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(radius, 0); ctx.strokeStyle = 'rgba(80, 255, 150, 0.5)'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
             }
 
             lkpMarks.forEach(lkp => {
+                const lx = cx + lkp.x; const ly = cy + lkp.y;
                 ctx.strokeStyle = '#ff4444'; ctx.fillStyle = '#ff4444'; ctx.lineWidth = 2; ctx.beginPath();
-                ctx.moveTo(lkp.x - 8, lkp.y - 8); ctx.lineTo(lkp.x + 8, lkp.y + 8); ctx.moveTo(lkp.x + 8, lkp.y - 8); ctx.lineTo(lkp.x - 8, lkp.y + 8); ctx.stroke();
-                ctx.font = 'bold 12px "Courier New"'; ctx.fillText('[X] LKP SIGNAL LOST', lkp.x + 12, lkp.y - 5); ctx.fillText(lkp.time, lkp.x + 12, lkp.y + 10);
+                ctx.moveTo(lx - 8, ly - 8); ctx.lineTo(lx + 8, ly + 8); ctx.moveTo(lx + 8, ly - 8); ctx.lineTo(lx - 8, ly + 8); ctx.stroke();
+                ctx.font = 'bold 12px "Courier New"'; ctx.fillText('[X] LKP SIGNAL LOST', lx + 12, ly - 5); ctx.fillText(lkp.time, lx + 12, ly + 10);
             });
 
             planes.forEach(plane => {
                 const isEmergency = (plane.status === '7700' || plane.status === 'EMG');
                 const isCST = (plane.status === 'CST');
                 const isBlinking = isMoving ? (Math.floor(Date.now() / 500) % 2 === 0) : true;
+                
+                // 將中心相對座標轉換為畫布上的絕對像素座標來繪製
+                const px = cx + plane.x; const py = cy + plane.y;
 
                 let trackColor = '#b5c6d3'; let labelBgColor = 'rgba(12, 18, 24, 0.85)';
                 if (isEmergency && isBlinking) { trackColor = '#ff4444'; labelBgColor = 'rgba(255, 68, 68, 0.25)'; } 
@@ -559,15 +529,15 @@
                 plane.history.forEach((pos, index) => {
                     const alpha = 0.2 + (index * 0.15);
                     ctx.fillStyle = isEmergency ? `rgba(255, 68, 68, ${alpha})` : (isCST ? `rgba(100, 100, 100, ${alpha})` : `rgba(181, 198, 211, ${alpha})`);
-                    ctx.fillRect(pos.x - 1.5, pos.y - 1.5, 3, 3);
+                    ctx.fillRect(cx + pos.x - 1.5, cy + pos.y - 1.5, 3, 3);
                 });
 
-                ctx.beginPath(); ctx.moveTo(plane.x - 5, plane.y); ctx.lineTo(plane.x + 5, plane.y); ctx.moveTo(plane.x, plane.y - 5); ctx.lineTo(plane.x, plane.y + 5); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(px - 5, py); ctx.lineTo(px + 5, py); ctx.moveTo(px, py - 5); ctx.lineTo(px, py + 5); ctx.stroke();
                 const radStatic = (plane.heading - 90) * Math.PI / 180; const vectorLength = isCST ? 10 : (plane.speed * 40); 
-                ctx.beginPath(); ctx.moveTo(plane.x, plane.y); ctx.lineTo(plane.x + Math.cos(radStatic) * vectorLength, plane.y + Math.sin(radStatic) * vectorLength); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(radStatic) * vectorLength, py + Math.sin(radStatic) * vectorLength); ctx.stroke();
 
-                const labelX = plane.x + 25; const labelY = plane.y - 25;
-                ctx.beginPath(); ctx.moveTo(plane.x + 5, plane.y - 5); ctx.lineTo(labelX - 5, labelY + 5); ctx.stroke();
+                const labelX = px + 25; const labelY = py - 25;
+                ctx.beginPath(); ctx.moveTo(px + 5, py - 5); ctx.lineTo(labelX - 5, labelY + 5); ctx.stroke();
                 ctx.font = 'bold 13px "Courier New", Courier, monospace'; ctx.fillStyle = labelBgColor; ctx.fillRect(labelX - 2, labelY - 12, 100, 45);
                 ctx.fillStyle = (isCST && isBlinking) ? '#333' : trackColor;
                 ctx.fillText(plane.id, labelX, labelY); ctx.fillText(plane.altSpd, labelX, labelY + 14); ctx.fillText(plane.status, labelX, labelY + 28);        
@@ -576,8 +546,7 @@
             requestAnimationFrame(drawRadar);
         }
 
-        // ================= 啟動程式 =================
-        initApp(); // 改由這行作為一切的起點
+        initApp(); 
     </script>
 </body>
 </html>

@@ -3,16 +3,16 @@
     "planes": [
         {
             "id": "CAL001",
-            "x": 600,
-            "y": -50,
+            "x": -250,
+            "y": -350,
             "speed": 0.8,
             "altSpd": "330=  45",
             "status": "KLDWA"
         },
         {
             "id": "CAL002",
-            "x": 555,
-            "y": -130,
+            "x": -295,
+            "y": -430,
             "speed": 0.8,
             "altSpd": "350=  45",
             "status": "KLDWA"
