@@ -8,11 +8,11 @@
     <!-- 設定頂部狀態列 (時間、電量那條) 的樣式為黑色半透明 -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <!-- 自訂加入主畫面時顯示的 App 名稱 -->
-    <meta name="apple-mobile-web-app-title" content="TTSB 雷達">
+    <meta name="apple-mobile-web-app-title" content="TTSB 雷達">    
     <title>TTSB 事故調查錄影調閱系統 - 電影拍攝用</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #080c10; overflow: hidden; font-family: "Courier New", Courier, monospace; color: #b5c6d3; touch-action: none; /* 防止手機瀏覽器預設的滑動行為 */ }
+        body { background-color: #080c10; overflow: hidden; font-family: "Courier New", Courier, monospace; color: #b5c6d3; touch-action: none; }
 
         #top-bar {
             position: absolute; top: 0; left: 0; width: 100%; height: 35px;
@@ -52,12 +52,14 @@
         .form-group label { font-size: 11px; color: #9ab; margin-bottom: 2px; }
         .form-group input, .form-group select { width: 100%; background: #080c10; border: 1px solid #324354; color: #fff; padding: 8px; font-size: 12px; border-radius: 3px; font-family: "Courier New", Courier, monospace; }
         .form-group input:focus, .form-group select:focus { border-color: #6495ed; outline: none; }
+        
         .btn { width: 100%; border: none; padding: 10px; cursor: pointer; border-radius: 3px; font-size: 12px; font-weight: bold; font-family: inherit; transition: opacity 0.2s; }
         .btn:hover { opacity: 0.85; }
         .btn-add { background: #3b5998; color: #fff; margin-top: 4px; }
         .btn-sweep { background: #2b3e50; color: #b5c6d3; border: 1px solid #324354; margin-top: 4px; }
-        .btn-refresh { background: #8b3a3a; color: #fff; border: 1px solid #a94442; margin-top: 4px; }
+        .btn-reset { background: #a94442; color: #fff; border: 1px solid #7a2c2b; margin-top: 4px; }
         .btn-time { background: #a56a31; color: #fff; white-space: nowrap; padding: 8px 15px; }
+        
         #plane-list { max-height: 100px; overflow-y: auto; margin-top: 4px; }
         .plane-item { display: flex; justify-content: space-between; align-items: center; background: #080c10; padding: 5px 8px; margin-bottom: 3px; border: 1px solid #253342; font-size: 12px; border-radius: 2px; }
         .btn-delete { background: #a94442; color: white; border: none; padding: 4px 8px; cursor: pointer; border-radius: 2px; font-size: 10px; }
@@ -74,40 +76,21 @@
         .pb-btn.active { background: #4CAF50; color: white; border-color: #4CAF50; }
         .pb-btn.speed-active { background: #3b5998; color: white; border-color: #6495ed; }
         
-        #timeline { 
-            flex-grow: 1; height: 16px; background: #080c10; /* 加高方便觸控 */
-            border-radius: 8px; margin: 0 20px; position: relative; 
-            border: 1px solid #324354; cursor: pointer; 
-        }
-        #timeline-fill { 
-            height: 100%; width: 0%; background: #6495ed; border-radius: 7px;
-            pointer-events: none; 
-        }
-        #timeline-handle {
-            position: absolute; top: -4px; bottom: -4px; width: 12px;
-            background: #fff; left: 0%; transform: translateX(-50%);
-            border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.8);
-            pointer-events: none; 
-        }
+        #timeline { flex-grow: 1; height: 16px; background: #080c10; border-radius: 8px; margin: 0 20px; position: relative; border: 1px solid #324354; cursor: pointer; }
+        #timeline-fill { height: 100%; width: 0%; background: #6495ed; border-radius: 7px; pointer-events: none; }
+        #timeline-handle { position: absolute; top: -4px; bottom: -4px; width: 12px; background: #fff; left: 0%; transform: translateX(-50%); border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.8); pointer-events: none; }
         
         #pb-timecode { font-size: 20px; color: #fff; font-weight: bold; background: #000; padding: 4px 12px; border: 1px solid #455a64; border-radius: 4px; }
 
-        /* ====== 手機與平板專用響應式排版 ====== */
         @media (max-width: 768px) {
             #top-bar { padding: 0 10px; font-size: 11px; }
             .replay-alert { font-size: 10px; }
             .hide-on-mobile { display: none; }
-            
             #cursor-coords { top: 40px; left: 10px; padding: 4px 8px; font-size: 10px; }
-            
-            #control-panel { 
-                top: 45px; left: 50%; right: auto; transform: translateX(-50%);
-                width: 95%; max-width: 380px; max-height: 75vh; overflow-y: auto;
-            }
-            
+            #control-panel { top: 45px; left: 50%; right: auto; transform: translateX(-50%); width: 95%; max-width: 380px; max-height: 75vh; overflow-y: auto; }
             #playback-bar { padding: 0 5px; height: auto; padding-top: 5px; padding-bottom: 5px; flex-wrap: wrap; justify-content: center; gap: 5px; }
             .pb-btn { font-size: 11px; padding: 6px 10px; margin-right: 0; }
-            #timeline { width: 100%; margin: 5px 10px; order: -1; } /* 讓時間軸在行動版跑到最上面 */
+            #timeline { width: 100%; margin: 5px 10px; order: -1; } 
             #pb-timecode { font-size: 15px; padding: 3px 8px; }
         }
     </style>
@@ -138,7 +121,10 @@
             <div class="section-title">⏱️ 錄影時間連戲</div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label>起始 UTC 時間 (HH:MM:SS):</label>
-                <div style="display: flex; gap: 8px;"><input type="text" id="inputTime" value="15:30:00" style="flex: 1;"><button class="btn btn-time" style="width: auto;" onclick="setCustomTime()">重設</button></div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="inputTime" value="15:30:00" style="flex: 1;">
+                    <button class="btn btn-time" style="width: auto;" onclick="setCustomTime(true)">更新時間</button>
+                </div>
             </div>
         </div>
         <div class="panel-section">
@@ -153,9 +139,13 @@
                 <div class="form-group"><label>速度:</label><input type="number" id="inputSpeed" value="0.8" step="0.1"></div>
             </div>
             <div class="form-group"><label>高度與速度標籤:</label><input type="text" id="inputAltSpd" value="350=  45"></div>
-            <button class="btn btn-add" onclick="addPlane()">➕ 加入目標</button>
+            <button class="btn btn-add" onclick="addPlane()">➕ 加入目標 (並儲存設定)</button>
         </div>
-        <div class="panel-section"><div class="section-title">🎛️ 系統動作</div><button class="btn btn-sweep" onclick="toggleSweep()">🔄 傳統掃描特效：<span id="sweepStatus">關閉</span></button></div>
+        <div class="panel-section">
+            <div class="section-title">🎛️ 系統動作</div>
+            <button class="btn btn-sweep" onclick="toggleSweep()">🔄 傳統掃描特效：<span id="sweepStatus">關閉</span></button>
+            <button class="btn btn-reset" onclick="resetToConfig()">⚠️ 還原成 config.json 初始設定</button>
+        </div>
         <div class="panel-section"><div class="section-title">📋 當前目標清單</div><div id="plane-list"></div></div>
         <div class="global-hint">快捷鍵 [H] 隱藏面板 | [F] 全螢幕</div>
     </div>
@@ -163,6 +153,10 @@
     <script>
         const canvas = document.getElementById('radarCanvas');
         const ctx = canvas.getContext('2d');
+        
+        // --- 設定檔與儲存常數 ---
+        const STORAGE_KEY = 'ttsb_radar_config';
+        const CONFIG_URL = 'config.json';
         
         let initialPlanes = []; 
         let planes = [];
@@ -181,12 +175,75 @@
 
         const CENTER_LAT = -24.0; const CENTER_LON = 178.0; const DEG_PER_PX = 0.003; 
 
-        function saveInitialState() {
-            initialPlanes = JSON.parse(JSON.stringify(planes));
-            initialPlanes.forEach(p => p.history = []);
+        // ================= 設定檔與 Storage 管理 =================
+
+        async function initApp() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                console.log("📥 從 LocalStorage 載入修改過的設定");
+                applySettings(JSON.parse(savedData));
+            } else {
+                console.log("📥 載入全新預設 config.json");
+                await loadDefaultConfig();
+            }
+            // 啟動繪圖迴圈
+            requestAnimationFrame(drawRadar);
         }
 
-        function setCustomTime() {
+        async function loadDefaultConfig() {
+            try {
+                const response = await fetch(CONFIG_URL);
+                if (!response.ok) throw new Error('找不到 config.json');
+                const data = await response.json();
+                applySettings(data);
+            } catch (error) {
+                alert("無法讀取 config.json，請確保您是透過 Live Server 執行網頁！\n" + error.message);
+            }
+        }
+
+        function applySettings(data) {
+            // 1. 設定時間
+            document.getElementById('inputTime').value = data.startTime;
+            
+            // 2. 解析並重置飛機狀態
+            initialPlanes = data.planes.map(p => {
+                // 自動運算航向 (heading) 如果 config 沒提供
+                let heading = p.heading;
+                if (heading === undefined && p.status && waypoints[p.status]) {
+                    const dx = (window.innerWidth/2 + waypoints[p.status].x) - p.x;
+                    const dy = (window.innerHeight/2 + waypoints[p.status].y) - p.y;
+                    heading = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+                    if (heading < 0) heading += 360;
+                }
+                return { ...p, heading: heading, history: [], scriptPhase: 0, outOfBounds: false };
+            });
+
+            // 3. 套用到系統
+            setCustomTime(false); // false 代表不要在此刻觸發 saveToLocal
+            updatePlaneListUI();
+        }
+
+        function saveToLocal() {
+            const data = {
+                startTime: document.getElementById('inputTime').value,
+                planes: initialPlanes.map(p => ({
+                    id: p.id, x: p.x, y: p.y, heading: p.heading, speed: p.speed, altSpd: p.altSpd, status: p.status
+                }))
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            console.log("💾 設定已存入 LocalStorage");
+        }
+
+        function resetToConfig() {
+            if(confirm("⚠️ 確定要捨棄所有修改，還原成 config.json 的初始設定嗎？")) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload(); // 最乾淨的做法：直接重整網頁重新抓取
+            }
+        }
+
+        // ================= 核心邏輯 =================
+
+        function setCustomTime(triggerSave = true) {
             const timeStr = document.getElementById('inputTime').value;
             const parts = timeStr.split(':');
             if(parts.length >= 2) {
@@ -204,6 +261,8 @@
                 simulatedTimestamp = timelineStartTime;
                 lastSimulatedTimestamp = timelineStartTime;
                 renderClockUI(); 
+                
+                if (triggerSave) saveToLocal();
             }
         }
 
@@ -261,7 +320,7 @@
             renderClockUI();
         }
 
-        // ================= 觸控與滑鼠共用邏輯 =================
+        // ================= 觸控與時間軸共用邏輯 =================
         
         let isDraggingTimeline = false;
         const timeline = document.getElementById('timeline');
@@ -273,12 +332,8 @@
             timelineHandle.style.left = (percent * 100) + '%';
         }
 
-        function getClientX(e) {
-            return e.touches ? e.touches[0].clientX : e.clientX;
-        }
-        function getClientY(e) {
-            return e.touches ? e.touches[0].clientY : e.clientY;
-        }
+        function getClientX(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
+        function getClientY(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
 
         function scrubTimeline(e) {
             const rect = timeline.getBoundingClientRect();
@@ -290,8 +345,7 @@
         }
 
         function handleTimelineStart(e) {
-            isDraggingTimeline = true;
-            isMoving = false;
+            isDraggingTimeline = true; isMoving = false;
             document.getElementById('pb-play').innerHTML = '▶ PLAY';
             document.getElementById('pb-play').classList.remove('active');
             scrubTimeline(e);
@@ -302,7 +356,6 @@
 
         function handleTimelineMove(e) {
             if (isDraggingTimeline) {
-                // 如果是觸控事件，阻止預設滑動以利精準拖曳時間軸
                 if(e.type === 'touchmove') e.preventDefault();
                 scrubTimeline(e);
             }
@@ -314,7 +367,7 @@
         document.addEventListener('mouseup', handleTimelineEnd);
         document.addEventListener('touchend', handleTimelineEnd);
 
-        // ================= 播放時鐘邏輯 =================
+        // ================= 播放時鐘與畫面縮放 =================
 
         function updateClock() {
             const now = Date.now();
@@ -347,16 +400,12 @@
         }
         setInterval(updateClock, 50);
 
-        // ================= UI 縮放與畫布觸控 =================
-
         function resizeCanvas() { 
             canvas.width = window.innerWidth; 
-            // 如果螢幕夠寬，扣除頂部跟底部；手機版因底部高度改變，自動調整
             const pbHeight = document.getElementById('playback-bar').offsetHeight;
             canvas.height = window.innerHeight - 35 - pbHeight; 
         }
         window.addEventListener('resize', resizeCanvas);
-        // 延遲呼叫確保手機版能抓到正確 DOM 高度
         setTimeout(resizeCanvas, 100);
 
         function handleHoverCoords(e) {
@@ -389,6 +438,8 @@
         canvas.addEventListener('mousedown', handleCanvasTap);
         canvas.addEventListener('touchstart', handleCanvasTap, {passive: true});
 
+        // ================= UI 互動與存檔觸發 =================
+
         function addPlane() {
             const id = document.getElementById('inputId').value;
             const speed = parseFloat(document.getElementById('inputSpeed').value) || 0.8;
@@ -402,8 +453,9 @@
             let heading = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
             if (heading < 0) heading += 360;
 
-            const newPlane = { id, x, y, heading, speed, altSpd, status: wpName, history: [], scriptPhase: 0 };
-            initialPlanes.push(newPlane);
+            initialPlanes.push({ id, x, y, heading, speed, altSpd, status: wpName, history: [], scriptPhase: 0 });
+            
+            saveToLocal(); // 儲存設定
             simulateTo(simulatedTimestamp);
             updatePlaneListUI();
         }
@@ -428,6 +480,7 @@
         
         function deletePlane(index) {
             initialPlanes.splice(index, 1);
+            saveToLocal(); // 儲存設定
             simulateTo(simulatedTimestamp);
             updatePlaneListUI();
         }
@@ -452,7 +505,7 @@
             }
         });
 
-        // ================= 繪圖邏輯 =================
+        // ================= 繪圖引擎 =================
 
         function drawMap() {
             const cx = canvas.width / 2; const cy = canvas.height / 2;
@@ -523,11 +576,8 @@
             requestAnimationFrame(drawRadar);
         }
 
-        // 系統初始化
-        planes.push({ id: "CAL001", x: window.innerWidth * 0.35, y: -50, heading: 145, speed: 0.8, altSpd: "330=  45", status: "KLDWA", history: [], scriptPhase: 0 });
-        planes.push({ id: "CAL002", x: (window.innerWidth * 0.35) - 45, y: -130, heading: 145, speed: 0.8, altSpd: "350=  45", status: "KLDWA", history: [], scriptPhase: 0 });
-        
-        saveInitialState(); setCustomTime(); updatePlaneListUI(); drawRadar();
+        // ================= 啟動程式 =================
+        initApp(); // 改由這行作為一切的起點
     </script>
 </body>
 </html>
