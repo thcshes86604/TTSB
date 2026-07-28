@@ -39,12 +39,18 @@
         .btn-reset { background: #a94442; color: #fff; border: 1px solid #7a2c2b; margin-top: 4px; }
         .btn-time { background: #a56a31; color: #fff; white-space: nowrap; padding: 8px 15px; }
         
+        /* 面板內的小型播放控制鈕 */
+        .pb-btn-panel { background: #253342; border: 1px solid #455a64; color: #b5c6d3; padding: 6px 8px; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 11px; border-radius: 3px; transition: 0.2s; }
+        .pb-btn-panel:hover { background: #324354; }
+        .pb-btn-panel.active { background: #4CAF50; color: white; border-color: #4CAF50; }
+        .pb-btn-panel.speed-active { background: #3b5998; color: white; border-color: #6495ed; }
+
         #plane-list { max-height: 100px; overflow-y: auto; margin-top: 4px; }
         .plane-item { display: flex; justify-content: space-between; align-items: center; background: #080c10; padding: 5px 8px; margin-bottom: 3px; border: 1px solid #253342; font-size: 12px; border-radius: 2px; }
         .btn-delete { background: #a94442; color: white; border: none; padding: 4px 8px; cursor: pointer; border-radius: 2px; font-size: 10px; }
         .global-hint { font-size: 11px; color: #678; margin-top: 8px; text-align: center; border-top: 1px dashed #253342; padding-top: 6px; }
 
-        #playback-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 55px; background-color: #121a24; border-top: 2px solid #324354; display: flex; align-items: center; padding: 0 20px; z-index: 100; }
+        #playback-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 55px; background-color: #121a24; border-top: 2px solid #324354; display: flex; align-items: center; padding: 0 20px; z-index: 100; transition: transform 0.3s; }
         .pb-btn { background: #253342; border: 1px solid #455a64; color: #b5c6d3; padding: 8px 16px; margin-right: 10px; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px; border-radius: 3px; }
         .pb-btn:hover { background: #324354; }
         .pb-btn.active { background: #4CAF50; color: white; border-color: #4CAF50; }
@@ -79,9 +85,10 @@
     <div id="cursor-coords">LAT: S 24°00'00"<br>LON: E 178°00'00"</div>
     <canvas id="radarCanvas"></canvas>
 
+    <!-- 下方主要播放列 -->
     <div id="playback-bar">
         <div id="timeline"><div id="timeline-fill"></div><div id="timeline-handle"></div></div>
-        <button class="pb-btn" id="pb-play">▶ PLAY</button>
+        <button class="pb-btn pb-play-sync">▶ PLAY</button>
         <button class="pb-btn pb-speed speed-active" data-speed="1">1x</button>
         <button class="pb-btn pb-speed" data-speed="2">2x</button>
         <button class="pb-btn pb-speed" data-speed="4">4x</button>
@@ -114,11 +121,21 @@
             <div class="form-group"><label>高度與速度標籤:</label><input type="text" id="inputAltSpd" value="350=  45"></div>
             <button class="btn btn-add" onclick="addPlane()">➕ 加入目標 (並儲存設定)</button>
         </div>
+        
+        <!-- 系統動作區塊 (新增播放控制與隱藏按鈕) -->
         <div class="panel-section">
             <div class="section-title">🎛️ 系統動作</div>
+            <div class="form-row" style="margin-bottom: 8px;">
+                <button class="pb-btn-panel pb-play-sync" style="flex:1;">▶ PLAY</button>
+                <button class="pb-btn-panel pb-speed speed-active" data-speed="1">1x</button>
+                <button class="pb-btn-panel pb-speed" data-speed="2">2x</button>
+                <button class="pb-btn-panel pb-speed" data-speed="4">4x</button>
+            </div>
+            <button class="btn btn-sweep" onclick="togglePlaybackBar()">🔽 隱藏/顯示下方播放列</button>
             <button class="btn btn-sweep" onclick="toggleSweep()">🔄 傳統掃描特效：<span id="sweepStatus">關閉</span></button>
             <button class="btn btn-reset" onclick="resetToConfig()">⚠️ 還原成 config.json 初始設定</button>
         </div>
+
         <div class="panel-section"><div class="section-title">📋 當前目標清單</div><div id="plane-list"></div></div>
         <div class="global-hint">快捷鍵 [H] 隱藏面板 | [F] 全螢幕</div>
     </div>
@@ -137,7 +154,7 @@
         let showSweep = false; 
         let playbackSpeed = 1; 
 
-        // 航點改成相對中心座標
+        // 航點相對中心座標
         const waypoints = { "MUKAM": { x: -420, y: -280 }, "LMWO": { x: 490,  y: -150 }, "KLDWA": { x: 280,  y: 300 }, "PACIF": { x: -300, y: 250 } };
 
         let timelineStartTime = Date.now();
@@ -151,10 +168,8 @@
         async function initApp() {
             const savedData = localStorage.getItem(STORAGE_KEY);
             if (savedData) {
-                console.log("📥 從 LocalStorage 載入修改過的設定");
                 applySettings(JSON.parse(savedData));
             } else {
-                console.log("📥 載入全新預設 config.json");
                 await loadDefaultConfig();
             }
             requestAnimationFrame(drawRadar);
@@ -206,6 +221,52 @@
             }
         }
 
+        // --- 播放與介面同步邏輯 ---
+        function syncPlayUI() {
+            const playBtns = document.querySelectorAll('.pb-play-sync');
+            playBtns.forEach(btn => {
+                if (isMoving) {
+                    btn.innerHTML = '⏸ PAUSE';
+                    btn.classList.add('active');
+                } else {
+                    btn.innerHTML = '▶ PLAY';
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function togglePlay() {
+            isMoving = !isMoving;
+            syncPlayUI();
+        }
+
+        document.querySelectorAll('.pb-play-sync').forEach(btn => {
+            btn.addEventListener('click', togglePlay);
+        });
+
+        document.querySelectorAll('.pb-speed').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetSpeed = parseFloat(this.getAttribute('data-speed'));
+                playbackSpeed = targetSpeed;
+                // 同步所有速度按鈕狀態
+                document.querySelectorAll('.pb-speed').forEach(b => {
+                    b.classList.remove('speed-active');
+                    if (parseFloat(b.getAttribute('data-speed')) === targetSpeed) {
+                        b.classList.add('speed-active');
+                    }
+                });
+            });
+        });
+
+        let isBarVisible = true;
+        function togglePlaybackBar() {
+            isBarVisible = !isBarVisible;
+            document.getElementById('playback-bar').style.display = isBarVisible ? 'flex' : 'none';
+            resizeCanvas(); // 隱藏後立刻重新計算 Canvas 高度填滿版面
+        }
+
+        // -------------------------
+
         function setCustomTime(triggerSave = true) {
             const timeStr = document.getElementById('inputTime').value;
             const parts = timeStr.split(':');
@@ -215,8 +276,7 @@
                 
                 timelineStartTime = targetTime.getTime();
                 isMoving = false;
-                document.getElementById('pb-play').innerHTML = '▶ PLAY';
-                document.getElementById('pb-play').classList.remove('active');
+                syncPlayUI(); // 同步 UI 變回 PLAY
                 updateTimelineUI(0);
                 
                 planes = JSON.parse(JSON.stringify(initialPlanes));
@@ -237,7 +297,6 @@
                 plane.y += Math.sin(rad) * (plane.speed / 2) * frameRatio;
 
                 if (plane.id === "CAL001") {
-                    // 使用中心點相對座標觸發，所有裝置一致
                     if (plane.scriptPhase === 0 && plane.y > -100) {
                         plane.status = "7700"; plane.altSpd = "280↓  38"; plane.speed = 0.5; plane.scriptPhase = 1;
                     }
@@ -256,7 +315,6 @@
                     }
                 }
 
-                // 邊界判定改為相對邏輯 (容錯範圍加大，避免提早消失)
                 if (plane.x > 2500 || plane.x < -2500 || plane.y > 2500 || plane.y < -2500) plane.outOfBounds = true;
 
                 plane.histTimer = (plane.histTimer || 0) + dtMs;
@@ -309,8 +367,7 @@
 
         function handleTimelineStart(e) {
             isDraggingTimeline = true; isMoving = false;
-            document.getElementById('pb-play').innerHTML = '▶ PLAY';
-            document.getElementById('pb-play').classList.remove('active');
+            syncPlayUI();
             scrubTimeline(e);
         }
 
@@ -340,8 +397,7 @@
                 let progress = (simulatedTimestamp - timelineStartTime) / timelineDuration;
                 if (progress >= 1) { 
                     progress = 1; isMoving = false;
-                    document.getElementById('pb-play').innerHTML = '▶ PLAY';
-                    document.getElementById('pb-play').classList.remove('active');
+                    syncPlayUI(); // 播完自動變回 PLAY
                 }
                 updateTimelineUI(progress);
             }
@@ -363,7 +419,8 @@
 
         function resizeCanvas() { 
             canvas.width = window.innerWidth; 
-            const pbHeight = document.getElementById('playback-bar').offsetHeight;
+            // 抓取下方播放條高度，如果是隱藏狀態，offsetHeight 會是 0，達成完美自適應
+            const pbHeight = isBarVisible ? document.getElementById('playback-bar').offsetHeight : 0;
             canvas.height = window.innerHeight - 35 - pbHeight; 
         }
         window.addEventListener('resize', resizeCanvas);
@@ -392,7 +449,6 @@
             const panel = document.getElementById('control-panel');
             if (panel.style.display !== 'none') {
                 const rect = canvas.getBoundingClientRect();
-                // 點擊轉換為中心相對座標
                 document.getElementById('inputX').value = Math.round(getClientX(e) - rect.left - (canvas.width / 2));
                 document.getElementById('inputY').value = Math.round(getClientY(e) - rect.top - (canvas.height / 2));
             }
@@ -408,7 +464,6 @@
             const x = parseFloat(document.getElementById('inputX').value);
             const y = parseFloat(document.getElementById('inputY').value);
 
-            // 由於全部改成相對座標，這裡的計算直接減即可，不需再牽扯 canvas 寬高
             const dx = waypoints[wpName].x - x;
             const dy = waypoints[wpName].y - y;
             let heading = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
@@ -420,21 +475,6 @@
             simulateTo(simulatedTimestamp);
             updatePlaneListUI();
         }
-
-        document.getElementById('pb-play').addEventListener('click', function() {
-            isMoving = !isMoving;
-            if (isMoving) { this.innerHTML = '⏸ PAUSE'; this.classList.add('active'); } 
-            else { this.innerHTML = '▶ PLAY'; this.classList.remove('active'); }
-        });
-
-        const speedBtns = document.querySelectorAll('.pb-speed');
-        speedBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                playbackSpeed = parseFloat(this.getAttribute('data-speed'));
-                speedBtns.forEach(b => b.classList.remove('speed-active'));
-                this.classList.add('speed-active');
-            });
-        });
 
         function togglePanelVisibility() { const panel = document.getElementById('control-panel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; }
         function toggleSweep() { showSweep = !showSweep; document.getElementById('sweepStatus').innerText = showSweep ? '開啟' : '關閉'; }
@@ -475,7 +515,6 @@
 
             ctx.save(); ctx.strokeStyle = 'rgba(100, 140, 200, 0.6)'; ctx.lineWidth = 2; ctx.setLineDash([20, 10, 5, 10]); ctx.beginPath(); ctx.moveTo(-200, cy - 100); ctx.lineTo(canvas.width + 200, cy + 300); ctx.stroke();
             
-            // FIR 區塊文字，修正干擾：往左偏移 400，往上微調
             ctx.fillStyle = 'rgba(100, 140, 200, 0.7)'; ctx.font = 'bold 16px "Courier New"'; ctx.translate(cx - 400, cy - 60); 
             const angle = Math.atan2((cy+300)-(cy-100), (canvas.width+200)-(-200)); ctx.rotate(angle); 
             ctx.fillText("NFFF (NADI OCEANIC FIR)", 0, -10); ctx.fillText("NZZO (AUCKLAND OCEANIC FIR)", 0, 25); ctx.restore();
@@ -518,7 +557,6 @@
                 const isCST = (plane.status === 'CST');
                 const isBlinking = isMoving ? (Math.floor(Date.now() / 500) % 2 === 0) : true;
                 
-                // 將中心相對座標轉換為畫布上的絕對像素座標來繪製
                 const px = cx + plane.x; const py = cy + plane.y;
 
                 let trackColor = '#b5c6d3'; let labelBgColor = 'rgba(12, 18, 24, 0.85)';
