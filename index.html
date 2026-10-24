@@ -7,48 +7,60 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TTSB 雷達">
-    <title>TTSB 事故調查錄影調閱系統 - 電影拍攝用</title>
+    <title>TTSB 事故調查錄影調閱系統 - 最終整合版</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
         body { background-color: #080c10; overflow: hidden; font-family: "Courier New", Courier, monospace; color: #b5c6d3; touch-action: none; }
 
-        #top-bar { position: absolute; top: 0; left: 0; width: 100%; height: 35px; background-color: #1a1010; border-bottom: 2px solid #a94442; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 15px; font-weight: bold; z-index: 5; }
-        .replay-alert { color: #ff4444; animation: blink 2s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .utc-time { color: #ff7777; background: rgba(255, 0, 0, 0.1); padding: 2px 8px; border-radius: 3px; }
-        canvas { display: block; margin-top: 35px; cursor: crosshair; }
+        #top-bar { position: absolute; top: 0; left: 0; width: 100%; height: 35px; background-color: #1a1010; border-bottom: 2px solid #a94442; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 15px; font-weight: bold; z-index: 15; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.7); }
+        .replay-alert { color: #ff4444; animation: blink 2s infinite; display: flex; align-items: center; gap: 8px; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+        .utc-time { color: #ff7777; background: rgba(255, 0, 0, 0.12); border: 1px solid rgba(255, 68, 68, 0.3); padding: 2px 10px; border-radius: 3px; letter-spacing: 0.5px; }
+        
+        canvas#radarCanvas { display: block; margin-top: 35px; cursor: crosshair; }
 
-        #cursor-coords { position: absolute; top: 45px; left: 15px; background: rgba(8, 12, 16, 0.85); border: 1px solid #324354; padding: 8px 12px; font-size: 13px; color: #6495ed; z-index: 10; pointer-events: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); line-height: 1.4; }
-        #control-panel { position: absolute; top: 45px; right: 15px; width: 330px; background-color: rgba(18, 26, 36, 0.95); border: 1px solid #324354; border-radius: 6px; padding: 12px; font-family: sans-serif; z-index: 20; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        /* 左上角經緯度與海浬比例尺資訊 */
+        #cursor-coords { position: absolute; top: 48px; left: 15px; background: rgba(8, 12, 16, 0.88); border: 1px solid #324354; border-left: 3px solid #6495ed; padding: 8px 12px; font-size: 13px; color: #6495ed; z-index: 10; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.6); line-height: 1.45; min-width: 195px; }
+        .coords-sub { font-size: 11px; color: #7b9ab0; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(50, 67, 84, 0.6); display: flex; justify-content: space-between; }
+
+        /* 左下角垂直高度剖面圖與告警監控 */
+        #profile-widget { position: absolute; bottom: 70px; left: 15px; width: 340px; height: 150px; background: rgba(8, 12, 16, 0.9); border: 1px solid #324354; border-top: 2px solid #6495ed; padding: 8px 10px; z-index: 10; pointer-events: none; box-shadow: 0 6px 18px rgba(0,0,0,0.65); display: flex; flex-direction: column; transition: opacity 0.25s; }
+        .profile-header { font-size: 11px; font-weight: bold; color: #8ab4f8; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .msaw-badge { background: #d32f2f; color: #fff; padding: 1px 6px; border-radius: 2px; font-size: 10px; display: none; animation: blink 0.6s infinite; }
+        #profileCanvas { width: 100%; flex: 1; display: block; }
+
+        /* 右側拍攝控制面板 */
+        #control-panel { position: absolute; top: 48px; right: 15px; width: 345px; max-height: calc(100vh - 115px); overflow-y: auto; background-color: rgba(18, 26, 36, 0.95); border: 1px solid #324354; border-radius: 6px; padding: 12px; font-family: sans-serif; z-index: 20; box-shadow: 0 10px 25px rgba(0,0,0,0.65); backdrop-filter: blur(4px); }
         .panel-header { font-size: 13px; font-weight: bold; color: #6495ed; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #324354; padding-bottom: 6px; }
-        .close-btn { color: #a94442; cursor: pointer; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 3px; background: rgba(169, 68, 66, 0.15); }
-        .close-btn:hover { background: rgba(169, 68, 66, 0.35); }
-        .panel-section { background: rgba(12, 18, 24, 0.6); border: 1px solid #253342; border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; }
-        .section-title { font-size: 11px; font-weight: bold; color: #7b9ab0; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+        .close-btn { color: #ff7777; cursor: pointer; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 3px; background: rgba(169, 68, 66, 0.2); border: 1px solid rgba(169, 68, 66, 0.4); }
+        .close-btn:hover { background: rgba(169, 68, 66, 0.4); }
+        .panel-section { background: rgba(12, 18, 24, 0.65); border: 1px solid #253342; border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; }
+        .section-title { font-size: 11px; font-weight: bold; color: #7b9ab0; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
         .form-row { display: flex; gap: 8px; margin-bottom: 6px; }
         .form-group { display: flex; flex-direction: column; flex: 1; margin-bottom: 6px; }
         .form-group:last-child { margin-bottom: 0; }
         .form-group label { font-size: 11px; color: #9ab; margin-bottom: 2px; }
-        .form-group input, .form-group select { width: 100%; background: #080c10; border: 1px solid #324354; color: #fff; padding: 8px; font-size: 12px; border-radius: 3px; font-family: "Courier New", Courier, monospace; }
+        .form-group input, .form-group select { width: 100%; background: #080c10; border: 1px solid #324354; color: #fff; padding: 7px 8px; font-size: 12px; border-radius: 3px; font-family: "Courier New", Courier, monospace; user-select: text; -webkit-user-select: text; }
         .form-group input:focus, .form-group select:focus { border-color: #6495ed; outline: none; }
         
-        .btn { width: 100%; border: none; padding: 10px; cursor: pointer; border-radius: 3px; font-size: 12px; font-weight: bold; font-family: inherit; transition: opacity 0.2s; }
-        .btn:hover { opacity: 0.85; }
+        .btn { width: 100%; border: none; padding: 9px; cursor: pointer; border-radius: 3px; font-size: 12px; font-weight: bold; font-family: inherit; transition: opacity 0.2s, background 0.2s; }
+        .btn:hover { opacity: 0.88; }
         .btn-add { background: #3b5998; color: #fff; margin-top: 4px; }
-        .btn-sweep { background: #2b3e50; color: #b5c6d3; border: 1px solid #324354; margin-top: 4px; }
+        .btn-sweep { background: #223242; color: #b5c6d3; border: 1px solid #324354; margin-top: 4px; }
         .btn-reset { background: #a94442; color: #fff; border: 1px solid #7a2c2b; margin-top: 4px; }
-        .btn-time { background: #a56a31; color: #fff; white-space: nowrap; padding: 8px 15px; }
+        .btn-time { background: #a56a31; color: #fff; white-space: nowrap; padding: 7px 14px; }
         
         .pb-btn-panel { background: #253342; border: 1px solid #455a64; color: #b5c6d3; padding: 6px 8px; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 11px; border-radius: 3px; transition: 0.2s; }
         .pb-btn-panel:hover { background: #324354; }
         .pb-btn-panel.active { background: #4CAF50; color: white; border-color: #4CAF50; }
         .pb-btn-panel.speed-active { background: #3b5998; color: white; border-color: #6495ed; }
 
-        #plane-list { max-height: 100px; overflow-y: auto; margin-top: 4px; }
+        #plane-list { max-height: 110px; overflow-y: auto; margin-top: 4px; }
         .plane-item { display: flex; justify-content: space-between; align-items: center; background: #080c10; padding: 5px 8px; margin-bottom: 3px; border: 1px solid #253342; font-size: 12px; border-radius: 2px; }
-        .btn-delete { background: #a94442; color: white; border: none; padding: 4px 8px; cursor: pointer; border-radius: 2px; font-size: 10px; }
-        .global-hint { font-size: 11px; color: #678; margin-top: 8px; text-align: center; border-top: 1px dashed #253342; padding-top: 6px; }
+        .btn-delete { background: #a94442; color: white; border: none; padding: 3px 8px; cursor: pointer; border-radius: 2px; font-size: 10px; }
+        .global-hint { font-size: 11px; color: #789; margin-top: 8px; text-align: center; border-top: 1px dashed #253342; padding-top: 6px; line-height: 1.5; }
 
+        /* 底部時間軸播放列 */
         #playback-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 55px; background-color: #121a24; border-top: 2px solid #324354; display: flex; align-items: center; padding: 0 20px; z-index: 100; transition: transform 0.3s; }
         .pb-btn { background: #253342; border: 1px solid #455a64; color: #b5c6d3; padding: 8px 16px; margin-right: 10px; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 14px; border-radius: 3px; }
         .pb-btn:hover { background: #324354; }
@@ -56,20 +68,22 @@
         .pb-btn.speed-active { background: #3b5998; color: white; border-color: #6495ed; }
         
         #timeline { flex-grow: 1; height: 16px; background: #080c10; border-radius: 8px; margin: 0 20px; position: relative; border: 1px solid #324354; cursor: pointer; }
-        #timeline-fill { height: 100%; width: 0%; background: #6495ed; border-radius: 7px; pointer-events: none; }
-        #timeline-handle { position: absolute; top: -4px; bottom: -4px; width: 12px; background: #fff; left: 0%; transform: translateX(-50%); border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.8); pointer-events: none; }
-        #pb-timecode { font-size: 20px; color: #fff; font-weight: bold; background: #000; padding: 4px 12px; border: 1px solid #455a64; border-radius: 4px; }
+        .timeline-marker { position: absolute; top: 0; bottom: 0; width: 2px; pointer-events: none; opacity: 0.75; }
+        #timeline-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #3b5998, #6495ed); border-radius: 7px; pointer-events: none; }
+        #timeline-handle { position: absolute; top: -4px; bottom: -4px; width: 12px; background: #fff; left: 0%; transform: translateX(-50%); border-radius: 6px; box-shadow: 0 0 6px rgba(0,0,0,0.9); pointer-events: none; }
+        #pb-timecode { font-size: 20px; color: #fff; font-weight: bold; background: #05080b; padding: 4px 12px; border: 1px solid #455a64; border-radius: 4px; min-width: 175px; text-align: center; }
 
         @media (max-width: 768px) {
             #top-bar { padding: 0 10px; font-size: 11px; }
             .replay-alert { font-size: 10px; }
             .hide-on-mobile { display: none; }
-            #cursor-coords { top: 40px; left: 10px; padding: 4px 8px; font-size: 10px; }
+            #cursor-coords { top: 42px; left: 10px; padding: 5px 8px; font-size: 10px; min-width: 150px; }
+            #profile-widget { bottom: 95px; left: 10px; width: 240px; height: 115px; }
             #control-panel { top: 45px; left: 50%; right: auto; transform: translateX(-50%); width: 95%; max-width: 380px; max-height: 75vh; overflow-y: auto; }
-            #playback-bar { padding: 0 5px; height: auto; padding-top: 5px; padding-bottom: 5px; flex-wrap: wrap; justify-content: center; gap: 5px; }
+            #playback-bar { padding: 5px; height: auto; flex-wrap: wrap; justify-content: center; gap: 5px; }
             .pb-btn { font-size: 11px; padding: 6px 10px; margin-right: 0; }
             #timeline { width: 100%; margin: 5px 10px; order: -1; } 
-            #pb-timecode { font-size: 15px; padding: 3px 8px; }
+            #pb-timecode { font-size: 14px; padding: 3px 8px; min-width: auto; }
         }
     </style>
 </head>
@@ -77,15 +91,37 @@
 
     <div id="top-bar">
         <div class="replay-alert">● PLAYBACK <span class="hide-on-mobile">| TTSB_INV_FILE: CAL001</span></div>
-        <div style="color: #6495ed;" class="hide-on-mobile">SOURCE: SPACE-BASED ADS-B | SECTOR: OCEANIC</div>
-        <div class="utc-time" id="clock">等待同步...</div>
+        <div style="color: #6495ed;" class="hide-on-mobile">SOURCE: SPACE-BASED ADS-B | SECTOR: OCEANIC (NFFF/NZZO)</div>
+        <div class="utc-time" id="clock">15:30:00 UTC</div>
     </div>
 
-    <div id="cursor-coords">LAT: S 24°00'00"<br>LON: E 178°00'00"</div>
+    <div id="cursor-coords">
+        <div id="coords-text">LAT: S 24°00'00"<br>LON: E 178°00'00"</div>
+        <div class="coords-sub">
+            <span id="zoom-readout">ZOOM: 1.00x</span>
+            <span>ADS-B LOCK</span>
+        </div>
+    </div>
+
+    <!-- 垂直高度剖面圖視窗 -->
+    <div id="profile-widget">
+        <div class="profile-header">
+            <span>📈 VERTICAL PROFILE: <strong id="profile-callsign" style="color:#fff;">CAL001</strong></span>
+            <span id="msaw-badge" class="msaw-badge">⚠ MSAW LOW ALT</span>
+        </div>
+        <canvas id="profileCanvas"></canvas>
+    </div>
+
     <canvas id="radarCanvas"></canvas>
 
     <div id="playback-bar">
-        <div id="timeline"><div id="timeline-fill"></div><div id="timeline-handle"></div></div>
+        <div id="timeline" title="拖曳調整回放時間">
+            <div class="timeline-marker" style="left: 33%; background: #ff9800;" title="FL280 / SQUAWK 7700"></div>
+            <div class="timeline-marker" style="left: 55%; background: #ff4444;" title="FL090 / DUAL ENG FAIL"></div>
+            <div class="timeline-marker" style="left: 78%; background: #e91e63;" title="SIGNAL LOST (LKP)"></div>
+            <div id="timeline-fill"></div>
+            <div id="timeline-handle"></div>
+        </div>
         <button class="pb-btn pb-play-sync">▶ PLAY</button>
         <button class="pb-btn pb-speed speed-active" data-speed="1">1x</button>
         <button class="pb-btn pb-speed" data-speed="2">2x</button>
@@ -94,9 +130,16 @@
     </div>
 
     <div id="control-panel">
-        <div class="panel-header"><span>📡 拍攝控制面板</span><span class="close-btn" onclick="togglePanelVisibility()">[X] 隱藏 (H)</span></div>
+        <div class="panel-header">
+            <span>📡 拍攝控制面板 (TopSky Pro)</span>
+            <span class="close-btn" onclick="togglePanelVisibility()">[X] 隱藏 (H)</span>
+        </div>
+
         <div class="panel-section">
-            <div class="section-title">⏱️ 錄影時間連戲</div>
+            <div class="section-title">
+                <span>⏱️ 錄影時間連戲</span>
+                <span id="config-source-badge" style="font-size:10px; color:#4CAF50;">已就緒</span>
+            </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label>起始 UTC 時間 (HH:MM:SS):</label>
                 <div style="display: flex; gap: 8px;">
@@ -105,59 +148,148 @@
                 </div>
             </div>
         </div>
+
+        <!-- 飛機目標區塊 (折疊) -->
         <div class="panel-section">
-            <div class="section-title">✈️ 新增航跡目標</div>
-            <div class="form-row">
-                <div class="form-group"><label>呼號:</label><input type="text" id="inputId" value="EVA201"></div>
-                <div class="form-group"><label>目標航點:</label><select id="inputWaypoint"><option value="MUKAM">MUKAM</option><option value="LMWO">LMWO</option><option value="KLDWA">KLDWA</option><option value="PACIF" selected>PACIF</option></select></div>
+            <div class="section-title" onclick="toggleAddPlaneContent()" style="cursor: pointer;">
+                <span>✈️ 新增航跡目標 (點圖取點)</span>
+                <span id="add-plane-icon">▶️</span>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label>相對X座標:</label><input type="number" id="inputX" value="120"></div>
-                <div class="form-group"><label>相對Y座標:</label><input type="number" id="inputY" value="-350"></div>
-                <div class="form-group"><label>速度:</label><input type="number" id="inputSpeed" value="0.8" step="0.1"></div>
+            <div id="add-plane-content" style="display: none; margin-top: 8px;">
+                <div class="form-row">
+                    <div class="form-group"><label>呼號:</label><input type="text" id="inputId" value="EVA201"></div>
+                    <div class="form-group">
+                        <label>目標航點:</label>
+                        <select id="inputWaypoint">
+                            <option value="MUKAM">MUKAM</option>
+                            <option value="LMWO">LMWO</option>
+                            <option value="KLDWA">KLDWA</option>
+                            <option value="PACIF" selected>PACIF</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>相對X座標:</label><input type="number" id="inputX" value="120"></div>
+                    <div class="form-group"><label>相對Y座標:</label><input type="number" id="inputY" value="-350"></div>
+                    <div class="form-group"><label>速度:</label><input type="number" id="inputSpeed" value="0.8" step="0.1"></div>
+                </div>
+                <div class="form-group"><label>高度與速度標籤:</label><input type="text" id="inputAltSpd" value="380=  45"></div>
+                <button class="btn btn-add" onclick="addPlane()">➕ 加入目標 (並儲存設定)</button>
             </div>
-            <div class="form-group"><label>高度與速度標籤:</label><input type="text" id="inputAltSpd" value="380=  45"></div>
-            <button class="btn btn-add" onclick="addPlane()">➕ 加入目標 (並儲存設定)</button>
         </div>
         
+        <!-- 地形與障礙物區塊 -->
         <div class="panel-section">
-            <div class="section-title">🎛️ 系統動作</div>
-            <div class="form-row" style="margin-bottom: 8px;">
-                <button class="pb-btn-panel pb-play-sync" style="flex:1;">▶ PLAY</button>
-                <button class="pb-btn-panel pb-speed speed-active" data-speed="1">1x</button>
-                <button class="pb-btn-panel pb-speed" data-speed="2">2x</button>
-                <button class="pb-btn-panel pb-speed" data-speed="4">4x</button>
+            <div class="section-title"><span>🗺️ 地形與障礙物</span></div>
+            <div class="form-row" style="margin-bottom: 6px;">
+                <div class="form-group">
+                    <label>標高文字 (空白則隱藏):</label>
+                    <input type="text" id="islandAltInput" value="x +1250">
+                </div>
             </div>
-            <button class="btn btn-sweep" onclick="togglePlaybackBar()">🔽 隱藏/顯示下方播放列</button>
-            <button class="btn btn-sweep" onclick="toggleSweep()">🔄 傳統掃描特效：<span id="sweepStatus">關閉</span></button>
-            <button class="btn btn-reset" onclick="resetToConfig()">⚠️ 還原成 config.json 初始設定</button>
+            <div class="form-row" style="margin-bottom: 0;">
+                <button class="btn btn-sweep" id="drawIslandBtn" style="background:#4CAF50; color:#fff; flex: 2;" onclick="toggleDrawMode()">✏️ 繪製向量島嶼</button>
+                <button class="btn btn-reset" style="flex: 1;" onclick="clearIslands()">🗑️ 清除</button>
+            </div>
         </div>
 
-        <div class="panel-section"><div class="section-title">📋 當前目標清單</div><div id="plane-list"></div></div>
-        <div class="global-hint">快捷鍵 [H] 隱藏面板 | [F] 全螢幕</div>
+        <!-- 系統動作區塊 (折疊) -->
+        <div class="panel-section">
+            <div class="section-title" onclick="toggleSystemContent()" style="cursor: pointer;">
+                <span>🎛️ 系統與鏡頭動作</span>
+                <span id="system-icon">🔽</span>
+            </div>
+            <div id="system-content" style="display: block; margin-top: 8px;">
+                <div class="form-row" style="margin-bottom: 8px;">
+                    <button class="pb-btn-panel pb-play-sync" style="flex:1;">▶ PLAY</button>
+                    <button class="pb-btn-panel pb-speed speed-active" data-speed="1">1x</button>
+                    <button class="pb-btn-panel pb-speed" data-speed="2">2x</button>
+                    <button class="pb-btn-panel pb-speed" data-speed="4">4x</button>
+                </div>
+                
+                <!-- 新增：方案 A/B 風格切換 與 遙測數據切換 -->
+                <div class="form-row" style="margin-bottom: 6px;">
+                    <button class="btn btn-sweep" style="flex:1; background:#455a64; color:#fff;" onclick="togglePathStyle()">✈️ 軌跡：<span id="pathStyleStatus">最終樣式與虛線圓圈</span></button>
+                    <button class="btn btn-sweep" style="flex:1; background:#3b5998; color:#fff;" onclick="toggleTelemetry()">📊 標籤：<span id="telemetryStatus">簡化版</span></button>
+                </div>
+                
+                <div class="form-row" style="margin-bottom: 0;">
+                    <button class="btn btn-sweep" style="flex:1;" onclick="togglePlaybackBar()">🔽 播放列 (B)</button>
+                    <button class="btn btn-sweep" style="flex:1;" onclick="toggleProfileWidget()">📈 剖面圖 (V)</button>
+                </div>
+                <div class="form-row" style="margin-bottom: 0;">
+                    <button class="btn btn-sweep" style="flex:1;" onclick="toggleSweep()">🔄 掃描線：<span id="sweepStatus">關閉</span></button>
+                    <button class="btn btn-sweep" style="flex:1;" onclick="toggleWatermark()">🔏 浮水印：<span id="watermarkStatus">顯示</span></button>
+                </div>
+                <button class="btn btn-sweep" onclick="resetCamera()">🎯 視角置中 (R)</button>
+                <button class="btn btn-reset" onclick="resetToConfig()">⚠️ 還原初始設定 (config.json)</button>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-title"><span>📋 當前目標清單</span></div>
+            <div id="plane-list"></div>
+        </div>
+        <div class="global-hint">
+            快捷鍵：<b>[Space]</b> 播放/暫停 | <b>[H]</b> 隱藏面板 | <b>[V]</b> 高度剖面<br>
+            <b>[B]</b> 隱藏時間軸 | <b>[R]</b> 重置縮放 | <b>[F]</b> 全螢幕 | <b>滾輪/右鍵</b> 縮放平移
+        </div>
     </div>
 
     <script>
         const canvas = document.getElementById('radarCanvas');
         const ctx = canvas.getContext('2d');
+        const profileCanvas = document.getElementById('profileCanvas');
+        const pCtx = profileCanvas.getContext('2d');
         
         const STORAGE_KEY = 'ttsb_radar_config';
+        const ISLAND_STORAGE_KEY = 'ttsb_islands_data'; 
         const CONFIG_URL = 'config.json';
+
+        // 內建預設劇本
+        const FALLBACK_CONFIG = {
+            startTime: "15:30:00",
+            planes: [
+                { id: "CAL001", x: -160, y: -220, speed: 0.85, altSpd: "360=  48", status: "PACIF" },
+                { id: "ANZ008", x: 180,  y: -260, speed: 0.75, altSpd: "380=  46", status: "KLDWA" },
+                { id: "QFA112", x: -380, y: 80,   speed: 0.70, altSpd: "350=  44", status: "LMWO" },
+                { id: "FJI410", x: 320,  y: 210,  speed: 0.65, altSpd: "340=  43", status: "MUKAM" }
+            ]
+        };
         
         let initialPlanes = []; 
         let planes = [];
         let lkpMarks = []; 
         let isMoving = false;    
         let showSweep = false; 
+        let isProfileVisible = true;
         let playbackSpeed = 1; 
 
-        // 航點相對中心座標
-       // 航點相對中心座標 (微調 PACIF 與 KLDWA 確保避開 FIR 邊界線)
+        let showWatermark = true; 
+        let showAdvancedTelemetry = false;
+        let pathStyle = 'A'; // 'A': 經典十字與點狀 | 'B': 飛機圖示與實線
+
+        let islands = []; 
+        let isDrawingMode = false;
+        let currentDrawingPoints = []; 
+        let currentWorldMouse = { x: 0, y: 0 }; 
+
+        let cameraZoom = 1.0;
+        let cameraPanX = 0;
+        let cameraPanY = 0;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let pointerMoved = false;
+
+        let viewWidth = window.innerWidth;
+        let viewHeight = window.innerHeight - 90;
+
         const waypoints = { 
             "MUKAM": { x: -420, y: -280 }, 
             "LMWO":  { x: 490,  y: -150 }, 
-            "KLDWA": { x: 280,  y: 330 },  // 往下移，避開邊界
-            "PACIF": { x: -300, y: 280 }   // 往下移，避開邊界
+            "KLDWA": { x: 280,  y: 330 },  
+            "PACIF": { x: -300, y: 280 }   
         };
 
         let timelineStartTime = Date.now();
@@ -166,15 +298,25 @@
         let lastTickTime = Date.now();
         const timelineDuration = 65 * 1000; 
 
-        const CENTER_LAT = -24.0; const CENTER_LON = 178.0; const DEG_PER_PX = 0.003; 
+        const CENTER_LAT = -24.0;
+        const CENTER_LON = 178.0;
+        const DEG_PER_PX = 0.003; 
 
         async function initApp() {
+            resizeCanvas();
             const savedData = localStorage.getItem(STORAGE_KEY);
             if (savedData) {
-                applySettings(JSON.parse(savedData));
+                try {
+                    applySettings(JSON.parse(savedData));
+                    document.getElementById('config-source-badge').innerText = '本機快取';
+                } catch (e) { await loadDefaultConfig(); }
             } else {
                 await loadDefaultConfig();
             }
+
+            const savedIslands = localStorage.getItem(ISLAND_STORAGE_KEY);
+            if (savedIslands) islands = JSON.parse(savedIslands);
+
             requestAnimationFrame(drawRadar);
         }
 
@@ -184,15 +326,17 @@
                 if (!response.ok) throw new Error('找不到 config.json');
                 const data = await response.json();
                 applySettings(data);
+                document.getElementById('config-source-badge').innerText = 'config.json';
             } catch (error) {
-                alert("無法讀取 config.json，請確保您是透過 Live Server 執行網頁！\n" + error.message);
+                console.warn("未偵測到外部 config.json，已自動載入內建預設拍攝劇本。");
+                applySettings(FALLBACK_CONFIG);
+                document.getElementById('config-source-badge').innerText = '內建預設劇本';
             }
         }
 
         function applySettings(data) {
-            document.getElementById('inputTime').value = data.startTime;
-            
-            initialPlanes = data.planes.map(p => {
+            document.getElementById('inputTime').value = data.startTime || "15:30:00";
+            initialPlanes = (data.planes || []).map(p => {
                 let heading = p.heading;
                 if (heading === undefined && p.status && waypoints[p.status]) {
                     const dx = waypoints[p.status].x - p.x;
@@ -200,9 +344,12 @@
                     heading = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
                     if (heading < 0) heading += 360;
                 }
-                return { ...p, heading: heading, history: [], scriptPhase: 0, outOfBounds: false };
+                return {
+                    ...p, heading: heading || 180, baseAltSpd: p.altSpd || "360=  45",
+                    history: [], altHistory: [], scriptPhase: 0, numericAlt: parseInt(p.altSpd) || 360,
+                    msawAlert: false, outOfBounds: false
+                };
             });
-
             setCustomTime(false);
             updatePlaneListUI();
         }
@@ -211,50 +358,104 @@
             const data = {
                 startTime: document.getElementById('inputTime').value,
                 planes: initialPlanes.map(p => ({
-                    id: p.id, x: p.x, y: p.y, heading: p.heading, speed: p.speed, altSpd: p.altSpd, status: p.status
+                    id: p.id, x: p.x, y: p.y, heading: p.heading, speed: p.speed, altSpd: p.baseAltSpd || p.altSpd, status: p.status
                 }))
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            document.getElementById('config-source-badge').innerText = '已儲存修改';
         }
 
-        function resetToConfig() {
-            if(confirm("⚠️ 確定要捨棄所有修改，還原成 config.json 的初始設定嗎？")) {
-                localStorage.removeItem(STORAGE_KEY);
-                location.reload(); 
+        function saveIslandsToLocal() { localStorage.setItem(ISLAND_STORAGE_KEY, JSON.stringify(islands)); }
+
+        async function resetToConfig() {
+            if (confirm("⚠️ 確定要捨棄所有修改，還原成初始設定嗎？")) {
+                localStorage.removeItem(STORAGE_KEY); resetCamera(); await loadDefaultConfig();
             }
+        }
+
+        function toggleAddPlaneContent() {
+            const content = document.getElementById('add-plane-content');
+            const icon = document.getElementById('add-plane-icon');
+            if (content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '🔽'; } 
+            else { content.style.display = 'none'; icon.innerText = '▶️'; }
+        }
+
+        function toggleSystemContent() {
+            const content = document.getElementById('system-content');
+            const icon = document.getElementById('system-icon');
+            if (content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '🔽'; } 
+            else { content.style.display = 'none'; icon.innerText = '▶️'; }
+        }
+
+        // --- 方案 B 的切換功能 ---
+        function togglePathStyle() {
+            if (pathStyle === 'A') {
+                pathStyle = 'B';
+                document.getElementById('pathStyleStatus').innerText = '十字游標與點狀軌跡';
+            } else if (pathStyle === 'B') {
+                pathStyle = 'C';
+                document.getElementById('pathStyleStatus').innerText = '擬真客機圖示軌跡';
+            } else {
+                pathStyle = 'A';
+                document.getElementById('pathStyleStatus').innerText = '最終樣式與虛線圓圈';
+            }
+        }
+
+        function toggleTelemetry() { 
+            showAdvancedTelemetry = !showAdvancedTelemetry; 
+            document.getElementById('telemetryStatus').innerText = showAdvancedTelemetry ? '硬核版' : '簡化版'; 
+        }
+
+        function toggleWatermark() { 
+            showWatermark = !showWatermark; 
+            document.getElementById('watermarkStatus').innerText = showWatermark ? '顯示' : '隱藏'; 
+        }
+
+        function toggleDrawMode() {
+            isDrawingMode = !isDrawingMode;
+            const btn = document.getElementById('drawIslandBtn');
+            if (isDrawingMode) {
+                btn.innerHTML = '✅ 結束並儲存島嶼'; btn.style.background = '#d32f2f';
+                currentDrawingPoints = []; canvas.style.cursor = 'crosshair';
+                document.getElementById('coords-text').innerHTML = "<span style='color:#ff7777;'>[島嶼繪製模式啟用中]<br>點擊海圖建立節點</span>";
+            } else {
+                btn.innerHTML = '✏️ 繪製向量島嶼'; btn.style.background = '#4CAF50';
+                canvas.style.cursor = 'crosshair';
+                if (currentDrawingPoints.length > 2) { 
+                    const altText = document.getElementById('islandAltInput').value;
+                    islands.push({ points: [...currentDrawingPoints], alt: altText }); 
+                    saveIslandsToLocal(); 
+                }
+                currentDrawingPoints = [];
+            }
+        }
+
+        function clearIslands() {
+            if (confirm('確定要刪除所有繪製的島嶼嗎？')) { islands = []; currentDrawingPoints = []; saveIslandsToLocal(); }
         }
 
         function syncPlayUI() {
             const playBtns = document.querySelectorAll('.pb-play-sync');
             playBtns.forEach(btn => {
-                if (isMoving) {
-                    btn.innerHTML = '⏸ PAUSE';
-                    btn.classList.add('active');
-                } else {
-                    btn.innerHTML = '▶ PLAY';
-                    btn.classList.remove('active');
-                }
+                if (isMoving) { btn.innerHTML = '⏸ PAUSE'; btn.classList.add('active'); } 
+                else { btn.innerHTML = '▶ PLAY'; btn.classList.remove('active'); }
             });
         }
 
         function togglePlay() {
-            isMoving = !isMoving;
-            syncPlayUI();
+            const progress = (simulatedTimestamp - timelineStartTime) / timelineDuration;
+            if (!isMoving && progress >= 1) { simulateTo(timelineStartTime); updateTimelineUI(0); }
+            isMoving = !isMoving; lastTickTime = Date.now(); syncPlayUI();
         }
 
-        document.querySelectorAll('.pb-play-sync').forEach(btn => {
-            btn.addEventListener('click', togglePlay);
-        });
-
+        document.querySelectorAll('.pb-play-sync').forEach(btn => btn.addEventListener('click', togglePlay));
         document.querySelectorAll('.pb-speed').forEach(btn => {
             btn.addEventListener('click', function() {
                 const targetSpeed = parseFloat(this.getAttribute('data-speed'));
                 playbackSpeed = targetSpeed;
                 document.querySelectorAll('.pb-speed').forEach(b => {
                     b.classList.remove('speed-active');
-                    if (parseFloat(b.getAttribute('data-speed')) === targetSpeed) {
-                        b.classList.add('speed-active');
-                    }
+                    if (parseFloat(b.getAttribute('data-speed')) === targetSpeed) b.classList.add('speed-active');
                 });
             });
         });
@@ -263,27 +464,36 @@
         function togglePlaybackBar() {
             isBarVisible = !isBarVisible;
             document.getElementById('playback-bar').style.display = isBarVisible ? 'flex' : 'none';
+            document.getElementById('profile-widget').style.bottom = isBarVisible ? '70px' : '15px';
             resizeCanvas(); 
+        }
+
+        function toggleProfileWidget() {
+            isProfileVisible = !isProfileVisible;
+            document.getElementById('profile-widget').style.display = isProfileVisible ? 'flex' : 'none';
+        }
+
+        function resetCamera() {
+            cameraZoom = 1.0; cameraPanX = 0; cameraPanY = 0;
+            document.getElementById('zoom-readout').innerText = `ZOOM: 1.00x`;
         }
 
         function setCustomTime(triggerSave = true) {
             const timeStr = document.getElementById('inputTime').value;
             const parts = timeStr.split(':');
-            if(parts.length >= 2) {
+            if (parts.length >= 2) {
                 const now = new Date();
-                const targetTime = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), parseInt(parts[0])||0, parseInt(parts[1])||0, parseInt(parts.length>2?parts[2]:0)||0));
+                const targetTime = new Date(Date.UTC(
+                    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+                    parseInt(parts[0]) || 0, parseInt(parts[1]) || 0, parseInt(parts.length > 2 ? parts[2] : 0) || 0
+                ));
                 
                 timelineStartTime = targetTime.getTime();
-                isMoving = false;
-                syncPlayUI(); 
-                updateTimelineUI(0);
+                isMoving = false; syncPlayUI(); updateTimelineUI(0);
                 
-                planes = JSON.parse(JSON.stringify(initialPlanes));
-                lkpMarks = [];
-                simulatedTimestamp = timelineStartTime;
-                lastSimulatedTimestamp = timelineStartTime;
+                planes = JSON.parse(JSON.stringify(initialPlanes)); lkpMarks = [];
+                simulatedTimestamp = timelineStartTime; lastSimulatedTimestamp = timelineStartTime;
                 renderClockUI(); 
-                
                 if (triggerSave) saveToLocal();
             }
         }
@@ -296,24 +506,25 @@
                 plane.y += Math.sin(rad) * (plane.speed / 2) * frameRatio;
 
                 if (plane.id === "CAL001" || plane.id === "EVA201") {
-                    // 階段一：緊急狀態，高度降至 FL280，速度 380 節
-                    if (plane.scriptPhase === 0 && plane.y > -100) {
-                        plane.status = "7700"; plane.altSpd = "280↓  38"; plane.speed = 0.5; plane.scriptPhase = 1;
+                    if (plane.scriptPhase === 0 && plane.y > -100) { plane.status = "7700"; plane.speed = 0.5; plane.scriptPhase = 1; }
+                    if (plane.scriptPhase === 1) {
+                        const ratio = Math.min(1, Math.max(0, (plane.y - (-100)) / 100));
+                        const curFL = Math.round(280 - ratio * 170); const curSpd = Math.round(38 - ratio * 14);  
+                        plane.numericAlt = curFL; plane.altSpd = `${String(curFL).padStart(3, '0')}↓  ${String(curSpd).padStart(2, '0')}`;
                     }
-                    // 階段二：引擎失效，機師嘗試維持最佳滑翔速度 (設定為 FL090 / 地速約 210 節)
-                    if (plane.scriptPhase === 1 && plane.y > 0) {
-                        // 使用單箭頭(↓)表示受控滑翔下降，速度異常掉落至 21 (210節)
-                        plane.altSpd = "090↓  21"; 
-                        // 將物理引擎的移動參數調慢，讓畫面上的光點移動產生明顯的「無力滯重感」
-                        plane.speed = 0.15; 
-                        plane.scriptPhase = 2;
+                    if (plane.scriptPhase === 1 && plane.y > 0) { plane.speed = 0.15; plane.scriptPhase = 2; }
+                    if (plane.scriptPhase === 2) {
+                        const ratio = Math.min(1, Math.max(0, plane.y / 80));
+                        const curFL = Math.round(90 - ratio * 68); const curSpd = Math.round(21 - ratio * 3); 
+                        plane.numericAlt = curFL; plane.msawAlert = true;
+                        plane.altSpd = `${String(curFL).padStart(3, '0')}↓  ${String(curSpd).padStart(2, '0')}`;
                     }
-                    // 階段三：雷達訊號消失 (Coast 狀態)
                     if (plane.scriptPhase === 2 && plane.y > 80) {
-                        plane.status = "CST"; plane.altSpd = "---   --"; plane.speed = 0.1; plane.scriptPhase = 3; plane.cstAccumulator = 0; 
+                        plane.status = "CST"; plane.altSpd = "---   --"; plane.speed = 0.1; plane.scriptPhase = 3;
+                        plane.msawAlert = false; plane.cstAccumulator = 0; 
                         const d = new Date(simulatedTimestamp);
                         const tStr = `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}:${String(d.getUTCSeconds()).padStart(2,'0')} UTC`;
-                        lkpMarks.push({ x: plane.x, y: plane.y, time: tStr });
+                        lkpMarks.push({ id: plane.id, x: plane.x, y: plane.y, time: tStr });
                     }
                     if (plane.scriptPhase === 3) {
                         plane.cstAccumulator += dtMs;
@@ -325,86 +536,53 @@
 
                 plane.histTimer = (plane.histTimer || 0) + dtMs;
                 if (plane.histTimer >= 1000) { 
-                    plane.histTimer = 0;
-                    plane.history.push({ x: plane.x, y: plane.y });
-                    if (plane.history.length > 5) plane.history.shift(); 
+                    plane.histTimer = 0; plane.history.push({ x: plane.x, y: plane.y });
+                    if (plane.history.length > 6) plane.history.shift(); 
+                    if (plane.scriptPhase < 3) {
+                        const elapsedSec = (simulatedTimestamp - timelineStartTime) / 1000;
+                        plane.altHistory = plane.altHistory || [];
+                        plane.altHistory.push({ t: elapsedSec, alt: plane.numericAlt || 360, emg: plane.scriptPhase > 0 });
+                    }
                 }
             });
             planes = planes.filter(p => !p.outOfBounds);
         }
 
         function simulateTo(targetTimestamp) {
-            planes = JSON.parse(JSON.stringify(initialPlanes));
-            lkpMarks = [];
-            let currentSimTime = timelineStartTime;
-            const STEP_MS = 16.666; 
+            planes = JSON.parse(JSON.stringify(initialPlanes)); lkpMarks = [];
+            let currentSimTime = timelineStartTime; const STEP_MS = 16.666; 
             while (currentSimTime < targetTimestamp) {
                 let dt = Math.min(STEP_MS, targetTimestamp - currentSimTime);
-                simulatedTimestamp = currentSimTime + dt; 
-                stepPhysics(dt);
-                currentSimTime += dt;
+                simulatedTimestamp = currentSimTime + dt; stepPhysics(dt); currentSimTime += dt;
             }
-            simulatedTimestamp = targetTimestamp;
-            lastSimulatedTimestamp = targetTimestamp;
-            renderClockUI();
+            simulatedTimestamp = targetTimestamp; lastSimulatedTimestamp = targetTimestamp; renderClockUI();
         }
         
         let isDraggingTimeline = false;
-        const timeline = document.getElementById('timeline');
-        const timelineFill = document.getElementById('timeline-fill');
-        const timelineHandle = document.getElementById('timeline-handle');
+        const timeline = document.getElementById('timeline'); const timelineFill = document.getElementById('timeline-fill'); const timelineHandle = document.getElementById('timeline-handle');
 
-        function updateTimelineUI(percent) {
-            timelineFill.style.width = (percent * 100) + '%';
-            timelineHandle.style.left = (percent * 100) + '%';
-        }
-
-        function getClientX(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
-        function getClientY(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
-
+        function updateTimelineUI(percent) { timelineFill.style.width = (percent * 100) + '%'; timelineHandle.style.left = (percent * 100) + '%'; }
+        function getClientX(e) { return e.touches && e.touches.length ? e.touches[0].clientX : e.clientX; }
+        function getClientY(e) { return e.touches && e.touches.length ? e.touches[0].clientY : e.clientY; }
         function scrubTimeline(e) {
             const rect = timeline.getBoundingClientRect();
-            let percent = (getClientX(e) - rect.left) / rect.width;
-            percent = Math.max(0, Math.min(1, percent));
-            updateTimelineUI(percent);
-            const targetTime = timelineStartTime + (percent * timelineDuration);
-            simulateTo(targetTime);
+            let percent = (getClientX(e) - rect.left) / rect.width; percent = Math.max(0, Math.min(1, percent));
+            updateTimelineUI(percent); simulateTo(timelineStartTime + (percent * timelineDuration));
         }
 
-        function handleTimelineStart(e) {
-            isDraggingTimeline = true; isMoving = false;
-            syncPlayUI();
-            scrubTimeline(e);
-        }
-
-        timeline.addEventListener('mousedown', handleTimelineStart);
-        timeline.addEventListener('touchstart', handleTimelineStart, {passive: true});
-
-        function handleTimelineMove(e) {
-            if (isDraggingTimeline) {
-                if(e.type === 'touchmove') e.preventDefault();
-                scrubTimeline(e);
-            }
-        }
-        document.addEventListener('mousemove', handleTimelineMove);
-        document.addEventListener('touchmove', handleTimelineMove, {passive: false});
-
+        function handleTimelineStart(e) { isDraggingTimeline = true; isMoving = false; syncPlayUI(); scrubTimeline(e); }
+        timeline.addEventListener('mousedown', handleTimelineStart); timeline.addEventListener('touchstart', handleTimelineStart, {passive: true});
+        function handleTimelineMove(e) { if (isDraggingTimeline) { if (e.type === 'touchmove') e.preventDefault(); scrubTimeline(e); } }
+        document.addEventListener('mousemove', handleTimelineMove); document.addEventListener('touchmove', handleTimelineMove, {passive: false});
         function handleTimelineEnd() { if (isDraggingTimeline) isDraggingTimeline = false; }
-        document.addEventListener('mouseup', handleTimelineEnd);
-        document.addEventListener('touchend', handleTimelineEnd);
+        document.addEventListener('mouseup', handleTimelineEnd); document.addEventListener('touchend', handleTimelineEnd);
 
         function updateClock() {
-            const now = Date.now();
-            const delta = now - lastTickTime;
-            lastTickTime = now;
-
+            const now = Date.now(); const delta = now - lastTickTime; lastTickTime = now;
             if (isMoving && !isDraggingTimeline) {
                 simulatedTimestamp += (delta * playbackSpeed);
                 let progress = (simulatedTimestamp - timelineStartTime) / timelineDuration;
-                if (progress >= 1) { 
-                    progress = 1; isMoving = false;
-                    syncPlayUI(); 
-                }
+                if (progress >= 1) { progress = 1; simulatedTimestamp = timelineStartTime + timelineDuration; isMoving = false; syncPlayUI(); }
                 updateTimelineUI(progress);
             }
             renderClockUI();
@@ -412,11 +590,7 @@
 
         function renderClockUI() {
             const d = new Date(simulatedTimestamp);
-            const h = String(d.getUTCHours()).padStart(2, '0');
-            const m = String(d.getUTCMinutes()).padStart(2, '0');
-            const s = String(d.getUTCSeconds()).padStart(2, '0');
-            const ms = String(d.getUTCMilliseconds()).padStart(3, '0');
-            
+            const h = String(d.getUTCHours()).padStart(2, '0'); const m = String(d.getUTCMinutes()).padStart(2, '0'); const s = String(d.getUTCSeconds()).padStart(2, '0'); const ms = String(d.getUTCMilliseconds()).padStart(3, '0');
             const blink = (!isMoving && Math.floor(Date.now() / 500) % 2 === 0) ? ' ' : ':';
             document.getElementById('clock').innerText = `${h}${blink}${m}${blink}${s} UTC`;
             document.getElementById('pb-timecode').innerText = `${h}:${m}:${s}.${ms} Z`;
@@ -424,209 +598,374 @@
         setInterval(updateClock, 50);
 
         function resizeCanvas() { 
-            canvas.width = window.innerWidth; 
+            const dpr = window.devicePixelRatio || 1; viewWidth = window.innerWidth;
             const pbHeight = isBarVisible ? document.getElementById('playback-bar').offsetHeight : 0;
-            canvas.height = window.innerHeight - 35 - pbHeight; 
-        }
-        window.addEventListener('resize', resizeCanvas);
-        setTimeout(resizeCanvas, 100);
+            viewHeight = window.innerHeight - 35 - pbHeight;
+            canvas.style.width = viewWidth + 'px'; canvas.style.height = viewHeight + 'px';
+            canvas.width = Math.floor(viewWidth * dpr); canvas.height = Math.floor(viewHeight * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        function handleHoverCoords(e) {
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = getClientX(e) - rect.left;
-            const mouseY = getClientY(e) - rect.top;
-
-            const latDiff = (mouseY - (canvas.height / 2)) * DEG_PER_PX;
-            const lonDiff = (mouseX - (canvas.width / 2)) * DEG_PER_PX;
-            const currentLat = CENTER_LAT - latDiff; const currentLon = CENTER_LON + lonDiff;
-            
-            const absLat = Math.abs(currentLat); const latDeg = Math.floor(absLat); const latMin = Math.floor((absLat - latDeg) * 60); const latSec = Math.floor(((absLat - latDeg) * 60 - latMin) * 60);
-            const absLon = Math.abs(currentLon); const lonDeg = Math.floor(absLon); const lonMin = Math.floor((absLon - lonDeg) * 60); const lonSec = Math.floor(((absLon - lonDeg) * 60 - lonMin) * 60);
-
-            document.getElementById('cursor-coords').innerHTML = 
-                `LAT: ${currentLat>=0?'N':'S'} ${String(latDeg).padStart(2,'0')}°${String(latMin).padStart(2,'0')}'${String(latSec).padStart(2,'0')}"<br>` +
-                `LON: ${currentLon>=0?'E':'W'} ${String(lonDeg).padStart(3,'0')}°${String(lonMin).padStart(2,'0')}'${String(lonSec).padStart(2,'0')}"`;
-        }
-        canvas.addEventListener('mousemove', handleHoverCoords);
-        canvas.addEventListener('touchmove', handleHoverCoords, {passive: true});
-
-        function handleCanvasTap(e) {
-            const panel = document.getElementById('control-panel');
-            if (panel.style.display !== 'none') {
-                const rect = canvas.getBoundingClientRect();
-                document.getElementById('inputX').value = Math.round(getClientX(e) - rect.left - (canvas.width / 2));
-                document.getElementById('inputY').value = Math.round(getClientY(e) - rect.top - (canvas.height / 2));
+            const pRect = profileCanvas.getBoundingClientRect();
+            if (pRect.width > 0 && pRect.height > 0) {
+                profileCanvas.width = Math.floor(pRect.width * dpr); profileCanvas.height = Math.floor(pRect.height * dpr); pCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
             }
         }
-        canvas.addEventListener('mousedown', handleCanvasTap);
-        canvas.addEventListener('touchstart', handleCanvasTap, {passive: true});
+        window.addEventListener('resize', resizeCanvas); setTimeout(resizeCanvas, 100);
+
+        function screenToWorld(sx, sy) { const cx = viewWidth / 2; const cy = viewHeight / 2; return { x: (sx - cx - cameraPanX) / cameraZoom, y: (sy - cy - cameraPanY) / cameraZoom }; }
+
+        function handleHoverCoords(e) {
+            const rect = canvas.getBoundingClientRect(); const mouseX = getClientX(e) - rect.left; const mouseY = getClientY(e) - rect.top;
+            if (isPanning && !isDrawingMode) {
+                const dx = mouseX - panStartX; const dy = mouseY - panStartY;
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) pointerMoved = true;
+                cameraPanX += dx; cameraPanY += dy; panStartX = mouseX; panStartY = mouseY;
+            }
+            const world = screenToWorld(mouseX, mouseY); currentWorldMouse = { x: world.x, y: world.y }; 
+
+            if (!isDrawingMode) {
+                const latDiff = world.y * DEG_PER_PX; const lonDiff = world.x * DEG_PER_PX;
+                const currentLat = CENTER_LAT - latDiff; const currentLon = CENTER_LON + lonDiff;
+                const absLat = Math.abs(currentLat); const latDeg = Math.floor(absLat); const latMin = Math.floor((absLat - latDeg) * 60); const latSec = Math.floor(((absLat - latDeg) * 60 - latMin) * 60);
+                const absLon = Math.abs(currentLon); const lonDeg = Math.floor(absLon); const lonMin = Math.floor((absLon - lonDeg) * 60); const lonSec = Math.floor(((absLon - lonDeg) * 60 - lonMin) * 60);
+                document.getElementById('coords-text').innerHTML = `LAT: ${currentLat>=0?'N':'S'} ${String(latDeg).padStart(2,'0')}°${String(latMin).padStart(2,'0')}'${String(latSec).padStart(2,'0')}"<br>` + `LON: ${currentLon>=0?'E':'W'} ${String(lonDeg).padStart(3,'0')}°${String(lonMin).padStart(2,'0')}'${String(lonSec).padStart(2,'0')}"`;
+            }
+        }
+        canvas.addEventListener('mousemove', handleHoverCoords); canvas.addEventListener('touchmove', handleHoverCoords, {passive: true});
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect(); const mouseX = getClientX(e) - rect.left; const mouseY = getClientY(e) - rect.top;
+            if (isDrawingMode) { const world = screenToWorld(mouseX, mouseY); currentDrawingPoints.push({ x: world.x, y: world.y }); return; }
+            isPanning = true; pointerMoved = false; panStartX = mouseX; panStartY = mouseY;
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (isPanning && !pointerMoved && e.target === canvas && !isDrawingMode) {
+                const panel = document.getElementById('control-panel');
+                if (panel.style.display !== 'none') {
+                    const rect = canvas.getBoundingClientRect(); const world = screenToWorld(getClientX(e) - rect.left, getClientY(e) - rect.top);
+                    document.getElementById('inputX').value = Math.round(world.x); document.getElementById('inputY').value = Math.round(world.y);
+                }
+            }
+            isPanning = false;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault(); if (isDrawingMode) return; 
+            const rect = canvas.getBoundingClientRect(); const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top;
+            const worldBefore = screenToWorld(mouseX, mouseY);
+            cameraZoom = Math.max(0.45, Math.min(3.5, cameraZoom * (e.deltaY < 0 ? 1.12 : 0.89)));
+            const cx = viewWidth / 2; const cy = viewHeight / 2;
+            cameraPanX = mouseX - cx - worldBefore.x * cameraZoom; cameraPanY = mouseY - cy - worldBefore.y * cameraZoom;
+            document.getElementById('zoom-readout').innerText = `ZOOM: ${cameraZoom.toFixed(2)}x`;
+        }, { passive: false });
 
         function addPlane() {
-            const id = document.getElementById('inputId').value;
-            const speed = parseFloat(document.getElementById('inputSpeed').value) || 0.8;
-            const altSpd = document.getElementById('inputAltSpd').value;
-            const wpName = document.getElementById('inputWaypoint').value;
-            const x = parseFloat(document.getElementById('inputX').value);
-            const y = parseFloat(document.getElementById('inputY').value);
-
-            const dx = waypoints[wpName].x - x;
-            const dy = waypoints[wpName].y - y;
-            let heading = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-            if (heading < 0) heading += 360;
-
-            initialPlanes.push({ id, x, y, heading, speed, altSpd, status: wpName, history: [], scriptPhase: 0 });
-            
-            saveToLocal();
-            simulateTo(simulatedTimestamp);
-            updatePlaneListUI();
+            const id = document.getElementById('inputId').value.trim() || "UNK01"; const speed = parseFloat(document.getElementById('inputSpeed').value) || 0.8;
+            const altSpd = document.getElementById('inputAltSpd').value; const wpName = document.getElementById('inputWaypoint').value;
+            const x = parseFloat(document.getElementById('inputX').value) || 0; const y = parseFloat(document.getElementById('inputY').value) || 0;
+            const dx = waypoints[wpName].x - x; const dy = waypoints[wpName].y - y;
+            let heading = Math.atan2(dy, dx) * (180 / Math.PI) + 90; if (heading < 0) heading += 360;
+            initialPlanes.push({ id, x, y, heading, speed, altSpd, baseAltSpd: altSpd, status: wpName, history: [], altHistory: [], scriptPhase: 0, numericAlt: parseInt(altSpd) || 360, msawAlert: false });
+            saveToLocal(); simulateTo(simulatedTimestamp); updatePlaneListUI();
         }
 
         function togglePanelVisibility() { const panel = document.getElementById('control-panel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; }
         function toggleSweep() { showSweep = !showSweep; document.getElementById('sweepStatus').innerText = showSweep ? '開啟' : '關閉'; }
-        
-        function deletePlane(index) {
-            initialPlanes.splice(index, 1);
-            saveToLocal();
-            simulateTo(simulatedTimestamp);
-            updatePlaneListUI();
-        }
-
+        function deletePlane(index) { initialPlanes.splice(index, 1); saveToLocal(); simulateTo(simulatedTimestamp); updatePlaneListUI(); }
         function updatePlaneListUI() {
-            const listDiv = document.getElementById('plane-list');
-            listDiv.innerHTML = '';
+            const listDiv = document.getElementById('plane-list'); listDiv.innerHTML = '';
             initialPlanes.forEach((plane, index) => { 
-                const item = document.createElement('div');
-                item.className = 'plane-item';
-                item.innerHTML = `<span>✈️ ${plane.id}</span><button class="btn-delete" onclick="deletePlane(${index})">刪除</button>`;
+                const item = document.createElement('div'); item.className = 'plane-item';
+                item.innerHTML = `<span>✈️ <b>${plane.id}</b> <small style="color:#789;">(${plane.status})</small></span><button class="btn-delete" onclick="deletePlane(${index})">刪除</button>`;
                 listDiv.appendChild(item);
             });
         }
 
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'select') return;
-            if (e.code === 'KeyH' || e.key === 'h' || e.key === 'H') togglePanelVisibility();
-            if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
-                if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err => console.log("全螢幕請求被阻擋:", err));
-                else if (document.exitFullscreen) document.exitFullscreen();
-            }
+            if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+            if (e.code === 'KeyH') togglePanelVisibility(); if (e.code === 'KeyB') togglePlaybackBar();
+            if (e.code === 'KeyV') toggleProfileWidget(); if (e.code === 'KeyR') resetCamera();
+            if (e.code === 'KeyF') { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err => console.log("全螢幕阻擋:", err)); else if (document.exitFullscreen) document.exitFullscreen(); }
         });
 
         function drawMap() {
-            const cx = canvas.width / 2; const cy = canvas.height / 2;
-            
-            // 繪製背景機密水印
-            ctx.save(); ctx.font = 'bold 60px Arial'; ctx.fillStyle = 'rgba(255, 255, 255, 0.04)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.translate(cx, cy); ctx.rotate(-20 * Math.PI / 180); ctx.fillText('TTSB CONFIDENTIAL REPLAY', 0, -50); ctx.font = 'bold 30px Arial'; ctx.fillText('DO NOT DISTRIBUTE', 0, 20); ctx.restore();
-            
-            // 繪製經緯網格
-            ctx.strokeStyle = 'rgba(84, 132, 152, 0.3)'; ctx.lineWidth = 1; ctx.setLineDash([5, 10]); 
-            for(let i = -2000; i < 3000; i += 150) { ctx.beginPath(); ctx.moveTo(i, -500); ctx.lineTo(i, canvas.height + 500); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-500, i); ctx.lineTo(canvas.width + 500, i); ctx.stroke(); } ctx.setLineDash([]); 
+            ctx.strokeStyle = 'rgba(84, 132, 152, 0.25)'; ctx.lineWidth = 1 / cameraZoom; ctx.setLineDash([5 / cameraZoom, 10 / cameraZoom]); 
+            for (let i = -2400; i <= 2400; i += 150) {
+                ctx.beginPath(); ctx.moveTo(i, -2400); ctx.lineTo(i, 2400); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-2400, i); ctx.lineTo(2400, i); ctx.stroke();
+            }
+            ctx.setLineDash([]); 
 
-            // ================= 新增防重疊機制：FIR 邊界線與文字 =================
-            ctx.save(); 
-            ctx.strokeStyle = 'rgba(100, 140, 200, 0.6)'; ctx.lineWidth = 2; ctx.setLineDash([20, 10, 5, 10]); 
-            
-            // 將邊界線改為相對於中心點 (cx, cy) 定位，精準穿過墜機點與 PACIF 之間的空隙
-            const lineStartX = cx - 2000; const lineStartY = cy + 120;
-            const lineEndX = cx + 2000;   const lineEndY = cy + 320; 
-            
-            // 畫線
+            ctx.save(); ctx.strokeStyle = 'rgba(100, 140, 200, 0.65)'; ctx.lineWidth = 2 / cameraZoom; ctx.setLineDash([20 / cameraZoom, 10 / cameraZoom, 5 / cameraZoom, 10 / cameraZoom]); 
+            const lineStartX = -2000; const lineStartY = 120; const lineEndX = 2000; const lineEndY = 320; 
             ctx.beginPath(); ctx.moveTo(lineStartX, lineStartY); ctx.lineTo(lineEndX, lineEndY); ctx.stroke();
             
-            // 將文字基準點移至畫面右半部 (cx + 100)，完全避開左半部的墜機熱區與 PACIF 航點
-            const textBaseX = cx + 100;
-            // 利用內插法，精準計算出 textBaseX 在該斜線上的 Y 座標
-            const textBaseY = lineStartY + ((textBaseX - lineStartX) / (lineEndX - lineStartX)) * (lineEndY - lineStartY);
+            const textBaseX = 100; const textBaseY = lineStartY + ((textBaseX - lineStartX) / (lineEndX - lineStartX)) * (lineEndY - lineStartY);
+            ctx.fillStyle = 'rgba(100, 140, 200, 0.75)'; ctx.font = 'bold 16px "Courier New"'; 
+            ctx.translate(textBaseX, textBaseY); const angle = Math.atan2(lineEndY - lineStartY, lineEndX - lineStartX); ctx.rotate(angle); 
+            ctx.fillText("NFFF (NADI OCEANIC FIR)", 0, -15); ctx.fillText("NZZO (AUCKLAND OCEANIC FIR)", 0, 30); ctx.restore();
 
-            ctx.fillStyle = 'rgba(100, 140, 200, 0.7)'; ctx.font = 'bold 16px "Courier New"'; 
-            ctx.translate(textBaseX, textBaseY); 
-            const angle = Math.atan2(lineEndY - lineStartY, lineEndX - lineStartX); ctx.rotate(angle); 
-            
-            // 保持在虛線上下方
-            ctx.fillText("NFFF (NADI OCEANIC FIR)", 0, -15); 
-            ctx.fillText("NZZO (AUCKLAND OCEANIC FIR)", 0, 30); 
-            ctx.restore();
-            // ======================================================================
+            islands.forEach(island => {
+                const pts = Array.isArray(island) ? island : island.points;
+                const alt = Array.isArray(island) ? 'x +1250' : island.alt;
+                if (pts && pts.length > 0) {
+                    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+                    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                    ctx.closePath(); ctx.fillStyle = 'rgba(30, 40, 30, 0.55)'; ctx.fill();
+                    ctx.strokeStyle = 'rgba(60, 90, 60, 0.8)'; ctx.lineWidth = 2 / cameraZoom; ctx.stroke();
+                    if (alt && alt.trim() !== '') {
+                        ctx.fillStyle = '#6a8a6a'; ctx.font = (11 / cameraZoom) + 'px "Courier New"'; ctx.fillText(alt, pts[0].x + 5, pts[0].y);
+                    }
+                }
+            });
 
-            // 繪製航點
-            ctx.fillStyle = 'rgba(104, 142, 162, 0.9)'; ctx.strokeStyle = 'rgba(104, 142, 162, 0.9)'; ctx.font = '12px "Courier New"';
-            Object.entries(waypoints).forEach(([name, wp]) => { const px = cx + wp.x; const py = cy + wp.y; ctx.beginPath(); ctx.moveTo(px, py - 6); ctx.lineTo(px + 6, py + 5); ctx.lineTo(px - 6, py + 5); ctx.closePath(); ctx.stroke(); ctx.fillText(name, px + 10, py + 5); });
+            if (isDrawingMode && currentDrawingPoints.length > 0) {
+                ctx.beginPath(); ctx.moveTo(currentDrawingPoints[0].x, currentDrawingPoints[0].y);
+                for (let i = 1; i < currentDrawingPoints.length; i++) ctx.lineTo(currentDrawingPoints[i].x, currentDrawingPoints[i].y);
+                ctx.lineTo(currentWorldMouse.x, currentWorldMouse.y); 
+                ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 1.5 / cameraZoom; ctx.setLineDash([4 / cameraZoom, 4 / cameraZoom]); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = '#ff4444'; const rectSize = 4 / cameraZoom;
+                currentDrawingPoints.forEach(p => ctx.fillRect(p.x - rectSize/2, p.y - rectSize/2, rectSize, rectSize));
+            }
+
+            ctx.fillStyle = 'rgba(104, 142, 162, 0.95)'; ctx.strokeStyle = 'rgba(104, 142, 162, 0.95)'; ctx.lineWidth = 1.5 / cameraZoom; ctx.font = 'bold ' + (12 / cameraZoom) + 'px "Courier New"';
+            Object.entries(waypoints).forEach(([name, wp]) => {
+                ctx.beginPath(); ctx.moveTo(wp.x, wp.y - 6/cameraZoom); ctx.lineTo(wp.x + 6/cameraZoom, wp.y + 5/cameraZoom); ctx.lineTo(wp.x - 6/cameraZoom, wp.y + 5/cameraZoom); ctx.closePath(); ctx.stroke();
+                ctx.fillText(name, wp.x + 10/cameraZoom, wp.y + 4/cameraZoom);
+            });
+        }
+
+        function drawVerticalProfile() {
+            if (!isProfileVisible) return;
+            const pRect = profileCanvas.getBoundingClientRect(); const w = pRect.width; const h = pRect.height; if (w === 0 || h === 0) return;
+            pCtx.clearRect(0, 0, w, h);
+            pCtx.strokeStyle = 'rgba(50, 67, 84, 0.6)'; pCtx.lineWidth = 1; pCtx.font = '10px "Courier New"'; pCtx.fillStyle = '#678';
+            [300, 200, 100].forEach(fl => {
+                const y = h - 18 - (fl / 420) * (h - 28);
+                pCtx.beginPath(); pCtx.setLineDash(fl === 100 ? [3, 3] : []); pCtx.strokeStyle = fl === 100 ? 'rgba(255, 68, 68, 0.45)' : 'rgba(50, 67, 84, 0.5)';
+                pCtx.moveTo(32, y); pCtx.lineTo(w - 6, y); pCtx.stroke(); pCtx.fillText(`FL${fl}`, 2, y + 3);
+            });
+            pCtx.setLineDash([]);
+            const targetPlane = planes.find(p => p.id === "CAL001" || p.id === "EVA201") || planes[0]; const msawBadge = document.getElementById('msaw-badge');
+            if (targetPlane) {
+                document.getElementById('profile-callsign').innerText = targetPlane.id; msawBadge.style.display = targetPlane.msawAlert ? 'inline-block' : 'none';
+                const pts = targetPlane.altHistory || [];
+                if (pts.length > 0) {
+                    pCtx.beginPath();
+                    pts.forEach((pt, idx) => { const px = 34 + (pt.t / 65) * (w - 42); const py = h - 18 - (pt.alt / 420) * (h - 28); if (idx === 0) pCtx.moveTo(px, py); else pCtx.lineTo(px, py); });
+                    pCtx.strokeStyle = targetPlane.scriptPhase > 0 ? '#ff5252' : '#6495ed'; pCtx.lineWidth = 2; pCtx.stroke();
+                    const last = pts[pts.length - 1]; const lx = 34 + (last.t / 65) * (w - 42); const ly = h - 18 - (last.alt / 420) * (h - 28);
+                    pCtx.fillStyle = targetPlane.scriptPhase > 0 ? '#ff5252' : '#6495ed'; pCtx.beginPath(); pCtx.arc(lx, ly, 3.5, 0, Math.PI * 2); pCtx.fill();
+                }
+            } else if (lkpMarks.length > 0) { msawBadge.style.display = 'inline-block'; msawBadge.innerText = 'SIGNAL LOST (LKP)'; } 
+            else { msawBadge.style.display = 'none'; }
         }
 
         function drawRadar() {
             if (isMoving && !isDraggingTimeline) {
                 let dt = simulatedTimestamp - lastSimulatedTimestamp;
-                if (dt > 0) {
-                    if (dt > 1000) dt = 16.666; 
-                    stepPhysics(dt);
-                }
+                if (dt > 0) { if (dt > 1000) dt = 16.666; stepPhysics(dt); }
             }
             lastSimulatedTimestamp = simulatedTimestamp;
 
-            ctx.fillStyle = '#080c10'; ctx.fillRect(0, 0, canvas.width, canvas.height); drawMap();
+            ctx.fillStyle = '#080c10'; ctx.fillRect(0, 0, viewWidth, viewHeight);
 
-            const cx = canvas.width / 2; const cy = canvas.height / 2;
+            const cx = viewWidth / 2; const cy = viewHeight / 2;
+
+            if (showWatermark) {
+                ctx.save(); ctx.font = 'bold 56px Arial'; ctx.fillStyle = 'rgba(255, 255, 255, 0.035)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.translate(cx, cy); ctx.rotate(-20 * Math.PI / 180); ctx.fillText('TTSB CONFIDENTIAL REPLAY', 0, -45); ctx.font = 'bold 28px Arial'; ctx.fillText('DO NOT DISTRIBUTE', 0, 20); ctx.restore();
+            }
+
+            ctx.save(); ctx.translate(cx + cameraPanX, cy + cameraPanY); ctx.scale(cameraZoom, cameraZoom);
+
+            drawMap();
 
             if (showSweep) {
                 const currentSweepAngle = ((simulatedTimestamp - timelineStartTime) / 1000) * 1.5;
-                ctx.save(); ctx.translate(cx, cy); ctx.rotate(currentSweepAngle);
-                const radius = Math.max(canvas.width, canvas.height); const grad = ctx.createConicGradient(0, 0, 0);
-                grad.addColorStop(0, 'rgba(50, 168, 113, 0.4)'); grad.addColorStop(0.001, 'rgba(50, 168, 113, 0)'); grad.addColorStop(0.85, 'rgba(50, 168, 113, 0)'); grad.addColorStop(1, 'rgba(50, 168, 113, 0.4)');     
-                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(radius, 0); ctx.strokeStyle = 'rgba(80, 255, 150, 0.5)'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
+                ctx.save(); ctx.rotate(currentSweepAngle);
+                const radius = Math.max(viewWidth, viewHeight) * 2 / cameraZoom; const grad = ctx.createConicGradient(0, 0, 0);
+                grad.addColorStop(0, 'rgba(50, 168, 113, 0.35)'); grad.addColorStop(0.001, 'rgba(50, 168, 113, 0)'); grad.addColorStop(0.85, 'rgba(50, 168, 113, 0)'); grad.addColorStop(1, 'rgba(50, 168, 113, 0.35)');     
+                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(radius, 0);
+                ctx.strokeStyle = 'rgba(80, 255, 150, 0.5)'; ctx.lineWidth = 1 / cameraZoom; ctx.stroke(); ctx.restore();
             }
 
             lkpMarks.forEach(lkp => {
-                const lx = cx + lkp.x; const ly = cy + lkp.y;
-                ctx.strokeStyle = '#ff4444'; ctx.fillStyle = '#ff4444'; ctx.lineWidth = 2; ctx.beginPath();
-                ctx.moveTo(lx - 8, ly - 8); ctx.lineTo(lx + 8, ly + 8); ctx.moveTo(lx + 8, ly - 8); ctx.lineTo(lx - 8, ly + 8); ctx.stroke();
-                ctx.font = 'bold 12px "Courier New"'; ctx.fillText('[X] LKP SIGNAL LOST', lx + 12, ly - 5); ctx.fillText(lkp.time, lx + 12, ly + 10);
+                const lx = lkp.x; const ly = lkp.y; const pulseRadius = (14 + ((Date.now() / 40) % 22)) / cameraZoom;
+                ctx.strokeStyle = `rgba(255, 68, 68, ${1 - (pulseRadius*cameraZoom - 14) / 22})`; ctx.lineWidth = 1.5 / cameraZoom; ctx.beginPath(); ctx.arc(lx, ly, pulseRadius, 0, Math.PI * 2); ctx.stroke();
+                ctx.strokeStyle = '#ff4444'; ctx.fillStyle = '#ff4444'; ctx.lineWidth = 2 / cameraZoom; const cross = 8 / cameraZoom;
+                ctx.beginPath(); ctx.moveTo(lx - cross, ly - cross); ctx.lineTo(lx + cross, ly + cross); ctx.moveTo(lx + cross, ly - cross); ctx.lineTo(lx - cross, ly + cross); ctx.stroke();
+                ctx.font = 'bold ' + (12/cameraZoom) + 'px "Courier New"'; ctx.fillText(`[X] LKP SIGNAL LOST (${lkp.id || 'CAL001'})`, lx + 14/cameraZoom, ly - 5/cameraZoom); ctx.fillText(lkp.time, lx + 14/cameraZoom, ly + 10/cameraZoom);
             });
 
             planes.forEach(plane => {
                 const isEmergency = (plane.status === '7700' || plane.status === 'EMG');
                 const isCST = (plane.status === 'CST');
                 const isBlinking = isMoving ? (Math.floor(Date.now() / 500) % 2 === 0) : true;
+                const px = plane.x; const py = plane.y;
+                let trackColor = '#b5c6d3'; let labelBgColor = 'rgba(12, 18, 24, 0.85)';
+                if (isEmergency && isBlinking) { trackColor = '#ff4444'; labelBgColor = 'rgba(255, 68, 68, 0.25)'; } 
+                else if (isCST) { trackColor = '#666666'; labelBgColor = 'rgba(50, 50, 50, 0.35)'; }
+
+                // ================== 切換樣式 A / B / C ==================
+                if (pathStyle === 'A') {
+                    // 1. 最終版本的樣式與虛線圓圈特效 (實體飛機 + 連續實線 + MSAW虛線圓圈)
+                    if (plane.msawAlert && isBlinking) {
+                        ctx.save(); ctx.strokeStyle = 'rgba(255, 50, 50, 0.85)'; ctx.lineWidth = 1.5 / cameraZoom; ctx.setLineDash([4/cameraZoom, 4/cameraZoom]);
+                        ctx.beginPath(); ctx.arc(px, py, 18/cameraZoom, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+                    }
+
+                    if (plane.history.length > 0) {
+                        ctx.beginPath();
+                        ctx.moveTo(plane.history[0].x, plane.history[0].y);
+                        for (let i = 1; i < plane.history.length; i++) {
+                            ctx.lineTo(plane.history[i].x, plane.history[i].y);
+                        }
+                        ctx.lineTo(px, py);
+                        ctx.strokeStyle = isEmergency ? 'rgba(255, 68, 68, 0.6)' : (isCST ? 'rgba(100, 100, 100, 0.6)' : 'rgba(181, 198, 211, 0.6)');
+                        ctx.lineWidth = 2 / cameraZoom;
+                        ctx.stroke();
+                    }
+
+                    ctx.save();
+                    ctx.translate(px, py);
+                    ctx.rotate(plane.heading * Math.PI / 180);
+                    ctx.fillStyle = trackColor;
+                    ctx.beginPath();
+                    const pSize = 7 / cameraZoom;
+                    ctx.moveTo(0, -pSize); // 機頭
+                    ctx.lineTo(pSize * 0.8, pSize); // 右翼
+                    ctx.lineTo(0, pSize * 0.5); // 機尾凹陷
+                    ctx.lineTo(-pSize * 0.8, pSize); // 左翼
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                    
+                    const radStatic = (plane.heading - 90) * Math.PI / 180;
+                    const vectorLength = (isCST ? 10 : (plane.speed * 40)) / cameraZoom; 
+                    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(radStatic) * vectorLength, py + Math.sin(radStatic) * vectorLength); ctx.stroke();
                 
-                const px = cx + plane.x; const py = cy + plane.y;
+                } else if (pathStyle === 'B') {
+                    // 2. 十字游標 + 點狀軌跡 (經典樣式，無虛線圓圈)
+                    ctx.strokeStyle = trackColor; ctx.fillStyle = trackColor; 
+                    plane.history.forEach((pos, index) => {
+                        const alpha = 0.2 + (index * 0.14);
+                        ctx.fillStyle = isEmergency ? `rgba(255, 68, 68, ${alpha})` : (isCST ? `rgba(100, 100, 100, ${alpha})` : `rgba(181, 198, 211, ${alpha})`);
+                        const dotSize = 3 / cameraZoom; ctx.fillRect(pos.x - dotSize/2, pos.y - dotSize/2, dotSize, dotSize);
+                    });
+
+                    ctx.strokeStyle = trackColor; ctx.lineWidth = 1.5 / cameraZoom; const crossSize = 5 / cameraZoom;
+                    ctx.beginPath(); ctx.moveTo(px - crossSize, py); ctx.lineTo(px + crossSize, py); ctx.moveTo(px, py - crossSize); ctx.lineTo(px, py + crossSize); ctx.stroke();
+                    
+                    const radStatic = (plane.heading - 90) * Math.PI / 180;
+                    const vectorLength = (isCST ? 10 : (plane.speed * 40)) / cameraZoom; 
+                    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(radStatic) * vectorLength, py + Math.sin(radStatic) * vectorLength); ctx.stroke();
+                
+                } else if (pathStyle === 'C') {
+                    // 3. 原創無版權的「擬真客機幾何圖形」 + 實線軌跡
+                    if (plane.history.length > 0) {
+                        ctx.beginPath();
+                        ctx.moveTo(plane.history[0].x, plane.history[0].y);
+                        for (let i = 1; i < plane.history.length; i++) ctx.lineTo(plane.history[i].x, plane.history[i].y);
+                        ctx.lineTo(px, py);
+                        ctx.strokeStyle = isEmergency ? 'rgba(255, 68, 68, 0.6)' : (isCST ? 'rgba(100, 100, 100, 0.6)' : 'rgba(181, 198, 211, 0.6)');
+                        ctx.lineWidth = 2 / cameraZoom;
+                        ctx.stroke();
+                    }
+
+                    // 繪製數學演算生成的民航客機外觀
+                    ctx.save();
+                    ctx.translate(px, py);
+                    ctx.rotate(plane.heading * Math.PI / 180);
+                    ctx.fillStyle = trackColor;
+                    
+                    const s = 4 / cameraZoom; 
+                    ctx.beginPath();
+                    ctx.moveTo(0, -s * 3.5); // 機頭
+                    ctx.quadraticCurveTo(s * 0.8, -s * 3.5, s * 0.8, -s * 1.5); // 右機頭弧線
+                    ctx.lineTo(s * 0.8, s * 0.2); // 右機身
+                    ctx.lineTo(s * 4, s * 2.2); // 右側後掠翼前緣
+                    ctx.lineTo(s * 4, s * 2.8); // 右側後掠翼後緣
+                    ctx.lineTo(s * 0.8, s * 1.5); // 右翼根部
+                    ctx.lineTo(s * 0.8, s * 3.5); // 右機身尾部
+                    ctx.lineTo(s * 2.2, s * 4.5); // 右水平尾翼前緣
+                    ctx.lineTo(s * 2.2, s * 4.8); // 右水平尾翼後緣
+                    ctx.lineTo(0, s * 4.2); // 機尾正中心
+                    ctx.lineTo(-s * 2.2, s * 4.8); // 左水平尾翼後緣
+                    ctx.lineTo(-s * 2.2, s * 4.5); // 左水平尾翼前緣
+                    ctx.lineTo(-s * 0.8, s * 3.5); // 左機身尾部
+                    ctx.lineTo(-s * 0.8, s * 1.5); // 左翼根部
+                    ctx.lineTo(-s * 4, s * 2.8); // 左側後掠翼後緣
+                    ctx.lineTo(-s * 4, s * 2.2); // 左側後掠翼前緣
+                    ctx.lineTo(-s * 0.8, s * 0.2); // 左機身
+                    ctx.lineTo(-s * 0.8, -s * 1.5); // 左機頭
+                    ctx.quadraticCurveTo(-s * 0.8, -s * 3.5, 0, -s * 3.5); // 左機頭弧線
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+
+                    // 繪製前向速度向量線
+                    const radStatic = (plane.heading - 90) * Math.PI / 180;
+                    const vectorLength = (isCST ? 10 : (plane.speed * 40)) / cameraZoom; 
+                    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(radStatic) * vectorLength, py + Math.sin(radStatic) * vectorLength); ctx.stroke();
+                }
+
+            });
+
+            ctx.restore(); 
+
+            // 繪製不被縮放影響的文字標籤
+            planes.forEach(plane => {
+                const isEmergency = (plane.status === '7700' || plane.status === 'EMG');
+                const isCST = (plane.status === 'CST');
+                const isBlinking = isMoving ? (Math.floor(Date.now() / 500) % 2 === 0) : true;
+                
+                const screenX = cx + cameraPanX + (plane.x * cameraZoom); const screenY = cy + cameraPanY + (plane.y * cameraZoom);
 
                 let trackColor = '#b5c6d3'; let labelBgColor = 'rgba(12, 18, 24, 0.85)';
                 if (isEmergency && isBlinking) { trackColor = '#ff4444'; labelBgColor = 'rgba(255, 68, 68, 0.25)'; } 
-                else if (isCST) { trackColor = '#666666'; labelBgColor = 'rgba(50, 50, 50, 0.3)'; }
+                else if (isCST) { trackColor = '#666666'; labelBgColor = 'rgba(50, 50, 50, 0.35)'; }
 
-                // 畫歷史軌跡點
-                ctx.strokeStyle = trackColor; ctx.fillStyle = trackColor; ctx.lineWidth = 1.5;
-                plane.history.forEach((pos, index) => {
-                    const alpha = 0.2 + (index * 0.15);
-                    ctx.fillStyle = isEmergency ? `rgba(255, 68, 68, ${alpha})` : (isCST ? `rgba(100, 100, 100, ${alpha})` : `rgba(181, 198, 211, ${alpha})`);
-                    ctx.fillRect(cx + pos.x - 1.5, cy + pos.y - 1.5, 3, 3);
-                });
-
-                // 畫飛機十字游標
-                ctx.beginPath(); ctx.moveTo(px - 5, py); ctx.lineTo(px + 5, py); ctx.moveTo(px, py - 5); ctx.lineTo(px, py + 5); ctx.stroke();
+                const labelX = screenX + 25; const labelY = screenY + 25;
+                ctx.strokeStyle = trackColor; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(screenX + 5, screenY + 5); ctx.lineTo(labelX - 2, labelY - 5); ctx.stroke();
                 
-                // 畫速度向量線 (往前延伸)
-                const radStatic = (plane.heading - 90) * Math.PI / 180; const vectorLength = isCST ? 10 : (plane.speed * 40); 
-                ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(radStatic) * vectorLength, py + Math.sin(radStatic) * vectorLength); ctx.stroke();
-
-                // 修正：文字標籤位置移至右下方 (Bottom-Right)，完美避開右上方的歷史航跡
-                const labelX = px + 30; const labelY = py + 30;
-                
-                // 畫文字標籤引線
-                ctx.beginPath(); 
-                ctx.moveTo(px + 5, py + 5); // 從十字游標的右下角出發
-                ctx.lineTo(labelX - 2, labelY - 5); // 連接至文字框的左上角附近
-                ctx.stroke();
-                
-                // 繪製文字與背景框
                 ctx.font = 'bold 13px "Courier New", Courier, monospace'; 
-                ctx.fillStyle = labelBgColor; 
-                ctx.fillRect(labelX - 2, labelY - 12, 100, 45);
-                ctx.fillStyle = (isCST && isBlinking) ? '#333' : trackColor;
-                ctx.fillText(plane.id, labelX, labelY); 
-                ctx.fillText(plane.altSpd, labelX, labelY + 14); 
-                ctx.fillText(plane.status, labelX, labelY + 28);        
+                
+                if (showAdvancedTelemetry) {
+                    ctx.fillStyle = labelBgColor; const boxHeight = plane.msawAlert ? 112 : 98;
+                    ctx.fillRect(labelX - 4, labelY - 13, 150, boxHeight);
+                    if (isEmergency) { ctx.strokeStyle = 'rgba(255, 68, 68, 0.6)'; ctx.lineWidth = 1; ctx.strokeRect(labelX - 4, labelY - 13, 150, boxHeight); }
+                    ctx.fillStyle = (isCST && isBlinking) ? '#444' : trackColor;
+                    
+                    if (isCST) {
+                        ctx.fillText(`ID : ${plane.id}`, labelX, labelY); ctx.fillText(`SSR: CST/LOST`, labelX, labelY + 14);
+                        ctx.fillText(`ALT: NO DATA`, labelX, labelY + 28); ctx.fillText(`TAS: NO DATA`, labelX, labelY + 42);
+                        ctx.fillText(`HDG: NO DATA`, labelX, labelY + 56); ctx.fillText(`V/S: NO DATA`, labelX, labelY + 70); ctx.fillText(`SYS: OFFLINE`, labelX, labelY + 84);
+                    } else {
+                        let rawAlt = plane.altSpd.split(' ')[0].replace(/[^0-9]/g, ''); let altStr = rawAlt ? rawAlt + '00' : '0'; 
+                        let rawSpd = plane.altSpd.split(' ').pop(); let spdStr = rawSpd ? rawSpd + '0' : '0';  
+                        let vs = "0"; if (plane.scriptPhase === 1) vs = "-2500"; if (plane.scriptPhase === 2) vs = "-4800"; 
+
+                        ctx.fillText(`ID : ${plane.id}`, labelX, labelY); ctx.fillText(`SSR: ${plane.status}`, labelX, labelY + 14);
+                        ctx.fillText(`ALT: ${altStr.padStart(5, ' ')} FT`, labelX, labelY + 28); ctx.fillText(`TAS: ${spdStr.padStart(3, ' ')} KTS`, labelX, labelY + 42);
+                        ctx.fillText(`HDG: ${String(Math.round(plane.heading)).padStart(3, '0')}°`, labelX, labelY + 56); ctx.fillText(`V/S: ${vs.padStart(5, ' ')} FPM`, labelX, labelY + 70);
+                        ctx.fillText(`LNK: ADS-B OK`, labelX, labelY + 84);
+                        if (plane.msawAlert) { ctx.fillStyle = isBlinking ? '#ffeb3b' : '#ff4444'; ctx.fillText('⚠ MSAW ALERT', labelX, labelY + 98); }
+                    }
+                } else {
+                    const boxHeight = plane.msawAlert ? 58 : 45;
+                    ctx.fillStyle = labelBgColor; ctx.fillRect(labelX - 4, labelY - 13, 106, boxHeight);
+                    if (isEmergency) { ctx.strokeStyle = 'rgba(255, 68, 68, 0.6)'; ctx.lineWidth = 1; ctx.strokeRect(labelX - 4, labelY - 13, 106, boxHeight); }
+                    ctx.fillStyle = (isCST && isBlinking) ? '#444' : trackColor;
+                    ctx.fillText(plane.id, labelX, labelY); ctx.fillText(plane.altSpd, labelX, labelY + 14); ctx.fillText(plane.status, labelX, labelY + 28);
+                    if (plane.msawAlert) { ctx.fillStyle = isBlinking ? '#ffeb3b' : '#ff4444'; ctx.fillText('MSAW LOW', labelX, labelY + 41); }
+                }
             });
 
-            requestAnimationFrame(drawRadar);
+            drawVerticalProfile(); requestAnimationFrame(drawRadar);
         }
 
         initApp(); 
